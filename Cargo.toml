@@ -10,3 +10,4 @@ edition = "2018"
 
 rand = "0.6.5"
 gnuplot = "0.0.34"
+colored = "1.9.3"
