@@ -2,103 +2,194 @@
 #![allow(non_camel_case_types)]
 #![allow(unused_variables)]
 
-use colored::*;
+use genetic_alg::constants::*;
+use genetic_alg::types::*;
+use genetic_alg::{Candidate, OptimizeType, StopCondition};
 use gnuplot::{Caption, Color, Figure};
 use rand::distributions::WeightedIndex;
 use rand::prelude::*;
 use rand::Rng;
+use std::fmt;
 
-// ==-- CONSTANTS --==
-const TEST_RANGE: isize = 10;
-const IND_SIZE: usize = 8; // Must be even
-const POP_SIZE: usize = 8;
-const GEN: usize = 30;
-const MUT_PR: f64 = 0.3;
-const REP_PR: f64 = 0.4;
-const SELECTED_EACH_ROUND: usize = 4;
-const DEBUG: bool = true;
+// ==-- IMPLEMENTATIONS --==
 
-// ==-- TYPES --==
-type MatingFnSignature = fn(&mut CandidateList, usize, usize, f64, &OptimizeType) -> CandidateList;
-// FIXME: La referencia a CandidateList no necesita ser mutable
-type FitnessFnSignature = fn(&ParamType) -> FitnessReturn;
-type ParamType = String;
-type FitnessReturn = isize;
-type t_int = isize;
-type CandidateList = Vec<Candidate>;
+// ==-- TRAITS --==
 
-// ==-- STRUCTS --==
-#[derive(Debug, Eq, Ord, PartialEq, PartialOrd, Clone)]
-// TODO: implementar métodos de ordenamiento de candidatos
-struct Candidate {
-    value: ParamType,
-    fitness: FitnessReturn,
-    mutated: bool,
-    selected: bool,
+trait ShowGraph {
+    fn show_graph(
+        x_axis: &[usize],
+        y_axis: &[FitnessReturn],
+        title: &str,
+        color: &str,
+    ) -> Result<bool, std::io::Error>;
 }
 
-impl Candidate {
-    pub fn new(value: ParamType, fitness: FitnessReturn, mutated: bool) -> Self {
-        Candidate {
-            value,
-            fitness,
-            mutated,
-            selected: true,
-        }
-    }
-}
-
-impl Default for Candidate {
-    fn default() -> Self {
-        Candidate::new(String::new(), 0 as FitnessReturn, false)
-    }
-}
-
-#[derive(PartialEq, Eq)]
-enum OptimizeType {
-    MAX,
-    MIN,
-}
-
-enum StopCondition {
-    CYCLES,
-    ERR(f64),
-    BOUND(FitnessReturn),
-}
 
 fn main() {
     basic_genetic_algorithm(
         POP_SIZE,
         fitness,
         elitist_mating,
-        &OptimizeType::MAX,
+        &OptimizeType::MIN,
         &StopCondition::CYCLES,
     );
+
+    // let mut candidates: CandidateList = Default::default();
+    // for i in 0..4 {
+    // let current_candidate = Candidate::new(String::from("00000000"), i as FitnessReturn, false);
+    // candidates.push(current_candidate);
+    // }
+    // candidates.sort_by(|a, b| a.fitness.partial_cmp(&b.fitness).unwrap());
+    // debug_msg("Ascendente");
+    // debug_candidates(&candidates);
+    // candidates.sort_by(|a, b| b.fitness.partial_cmp(&a.fitness).unwrap());
+    // debug_msg("Descendente");
+    // debug_candidates(&candidates);
 }
 
-fn debug_candidate(c: &Candidate) {
-    println!("({},{},{})", (*c).value, (*c).fitness, (*c).mutated);
+// ==-- UTILS --==
+
+mod utils {
+
+    use super::*;
+
+    pub fn bin_to_int(bin: &String) -> t_int {
+        let r_int: t_int = isize::from_str_radix(bin, 2).unwrap();
+        r_int
+    }
+
+    pub fn debug_msg(msg: &str) {
+        println!("  => {} ", msg);
+    }
+
+    pub fn random_range(start: isize, finish: isize) -> isize {
+        let mut rng = thread_rng();
+        return rng.gen_range(start, finish);
+    }
+
+    pub fn splitting_point(n: usize, pr: f64) -> usize {
+        let spf: f64 = pr * (n as f64);
+        return spf as usize;
+    }
+
+    pub fn roulette(weights: &[FitnessReturn; POP_SIZE]) -> t_int {
+        //TODO: Implementar generics
+        // Regresa 0 <= valor < weights.len()
+
+        let mut rng = thread_rng();
+        let values = 0..weights.len();
+        let weighted_dist = WeightedIndex::new(weights).unwrap();
+
+        return weighted_dist.sample(&mut rng) as t_int;
+    }
 }
 
-fn random_range(start: isize, finish: isize) -> isize {
-    let mut rng = thread_rng();
-    return rng.gen_range(start, finish);
-}
+mod genetic_alg {
 
-fn splitting_point(n: usize, pr: f64) -> usize {
-    let spf: f64 = pr * (n as f64);
-    return spf as usize;
-}
+    use super::*;
 
-fn roulette(weights: &[FitnessReturn; POP_SIZE]) -> t_int {
-    //TODO: Implementar generics
-    // Regresa 0 <= valor < weights.len()
+    pub mod constants {
+        // ==-- CONSTANTS --==
+        pub const TEST_RANGE: isize = 10;
+        pub const IND_SIZE: usize = 8; // Must be even
+        pub const POP_SIZE: usize = 8;
+        pub const GEN: usize = 10;
+        pub const MUT_PR: f64 = 0.3;
+        pub const REP_PR: f64 = 0.7;
+        pub const SELECTED_EACH_ROUND: usize = 4;
+        pub const DEBUG: bool = true;
+    }
 
-    let mut rng = thread_rng();
-    let values = 0..weights.len();
-    let weighted_dist = WeightedIndex::new(weights).unwrap();
+    pub mod functions {
+        use super::constants::*;
+        use super::types::*;
+        use super::types::*;
+        use super::Candidate;
 
-    return weighted_dist.sample(&mut rng) as t_int;
+        pub fn mate(father: &Candidate, mother: &Candidate, k: usize) -> (Candidate, Candidate) {
+            // TODO: Volverlo un trait?
+            // FIXME: Tomar como parámetro un Candidate
+            //Regresa una tupla de hijos
+
+            let gnomes_father = (&father.value[0..k], &father.value[k..IND_SIZE]);
+            let gnomes_mother = (&mother.value[0..k], &mother.value[k..IND_SIZE]);
+            let mut sons: (Candidate, Candidate) = (
+                Candidate::new(String::from(gnomes_father.0), 0 as FitnessReturn, false),
+                Candidate::new(String::from(gnomes_mother.0), 0 as FitnessReturn, false),
+            );
+
+            sons.0.value.push_str(gnomes_mother.1);
+            sons.1.value.push_str(gnomes_father.1);
+
+            return sons;
+        }
+
+        fn mate2() {}
+    }
+
+    // ==-- STRUCTS --==
+    #[derive(PartialEq, Eq)]
+    pub enum OptimizeType {
+        MAX,
+        MIN,
+    }
+
+    pub enum StopCondition {
+        CYCLES,
+        ERR(f64),
+        BOUND(types::FitnessReturn),
+    }
+
+    #[derive(Clone)]
+    pub struct Candidate {
+        pub value: ParamType,
+        pub fitness: FitnessReturn,
+        pub mutated: bool,
+        pub selected: bool,
+    }
+
+    impl Candidate {
+        pub fn new(value: ParamType, fitness: FitnessReturn, mutated: bool) -> Self {
+            Candidate {
+                value,
+                fitness,
+                mutated,
+                selected: true,
+            }
+        }
+    }
+
+    impl Default for Candidate {
+        fn default() -> Self {
+            Candidate::new(String::new(), 0 as FitnessReturn, false)
+        }
+    }
+
+    impl fmt::Debug for Candidate {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            write!(
+                f,
+                "* ({:?},{:?},{:?},{:?})",
+                self.value,
+                utils::bin_to_int(&self.value),
+                self.fitness,
+                self.mutated
+            )
+        }
+    }
+
+    pub mod types {
+        use super::*;
+        // ==-- TYPES --==
+        pub type MatingFnSignature =
+            fn(&mut CandidateList, usize, usize, f64, &OptimizeType) -> CandidateList;
+        // CHANGED: La referencia a CandidateList necesita ser mutable porque se reordena
+        pub type FitnessFnSignature = fn(&ParamType) -> FitnessReturn;
+        pub type ParamType = String;
+        pub type FitnessReturn = f64;
+        pub type t_int = isize;
+        pub type CandidateList = Vec<Candidate>;
+    }
 }
 
 fn fitness(x: &ParamType) -> FitnessReturn {
@@ -106,51 +197,30 @@ fn fitness(x: &ParamType) -> FitnessReturn {
     return x_int.pow(2) as FitnessReturn;
 }
 
-fn mate(father: &Candidate, mother: &Candidate, k: usize) -> (Candidate, Candidate) {
-    // FIXME: Tomar como parámetro un Candidate
-    //Regresa una tupla de hijos
-
-    let gnomes_father = (&father.value[0..k], &father.value[k..IND_SIZE]);
-    let gnomes_mother = (&mother.value[0..k], &mother.value[k..IND_SIZE]);
-    let mut sons: (Candidate, Candidate) = (
-        Candidate::new(String::from(gnomes_father.0), 0, false),
-        Candidate::new(String::from(gnomes_mother.0), 0, false),
-    );
-
-    sons.0.value.push_str(gnomes_mother.1);
-    sons.1.value.push_str(gnomes_father.1);
-
-    return sons;
-}
-
-fn generate_initial_candidates() -> CandidateList {
+fn generate_initial_candidates(requested: usize, l: usize) -> CandidateList {
     let mut candidates: CandidateList = Vec::new();
 
-    for _i in 0..POP_SIZE {
+    for _i in 0..requested {
         let mut current_cand_str = String::new();
-        for _j in 0..IND_SIZE {
-            let val = random_range(0, 2);
+        for _j in 0..l {
+            let val = utils::random_range(0, 2);
             current_cand_str.push_str(&val.to_string());
         }
 
-        let current_candidate: Candidate = Candidate::new(current_cand_str, 0, false);
+        let current_candidate: Candidate =
+            Candidate::new(current_cand_str, 0 as FitnessReturn, false);
         candidates.push(current_candidate);
     }
 
     return candidates;
 }
 
-fn bin_to_int(bin: &String) -> t_int {
-    let r_int: t_int = isize::from_str_radix(bin, 2).unwrap();
-    r_int
-}
-
 fn mutate(candidate: &mut Candidate, mut_pr: f64, opt: &OptimizeType) {
     let mut rng = thread_rng();
 
-    //Elegir si se va a mutar
+    // Flip a weighted coin
     let weights: [f64; 2] = [mut_pr, 1f64 - mut_pr];
-    // (Probabilidad de mutar,  Probabilidad de NO mutar)
+    // (Probability of mutating,  Probability of NOT mutating)
 
     let weighted_cointoss = WeightedIndex::new(weights.iter()).unwrap();
 
@@ -168,14 +238,14 @@ fn mutate(candidate: &mut Candidate, mut_pr: f64, opt: &OptimizeType) {
 
     if mutate {
         mutated = String::new();
-        let unwanted_char = match *opt {
+        let unwanted_char = match opt {
             OptimizeType::MAX => '0',
             OptimizeType::MIN => '1',
         };
         let mut k: usize;
         let mut tries: usize = 0;
         loop {
-            k = random_range(0, IND_SIZE as isize) as usize;
+            k = utils::random_range(0, IND_SIZE as isize) as usize;
             let char_array: Vec<char> = candidate.value.chars().collect();
             if char_array[k] == unwanted_char || tries > IND_SIZE {
                 break;
@@ -188,7 +258,7 @@ fn mutate(candidate: &mut Candidate, mut_pr: f64, opt: &OptimizeType) {
         let mut mutated_char: char;
         for c in candidate.value.chars() {
             if i == k {
-                mutated_char = match *opt {
+                mutated_char = match opt {
                     OptimizeType::MAX => '1',
                     OptimizeType::MIN => '0',
                 };
@@ -212,6 +282,7 @@ fn roulette_mating(
     prob_rep: f64,
 ) -> CandidateList {
     let new_candidates: CandidateList = Vec::new();
+
     // Obtener vector de pesos
     let mut weights: [FitnessReturn; POP_SIZE] = [0 as FitnessReturn; POP_SIZE];
 
@@ -227,8 +298,8 @@ fn roulette_mating(
     for i in 0..POP_SIZE / 2 {
         // Obtener padres de acuerdo a pesos de candidatos
         // Seleccionar un índice al azar con peso
-        let index_m = roulette(&weights) as usize;
-        let index_f = roulette(&weights) as usize;
+        let index_m = utils::roulette(&weights) as usize;
+        let index_f = utils::roulette(&weights) as usize;
 
         // COPIAR los candidatos elegidos al azar a sus respectivos vectores
         let selected_father = candidates[index_f].clone();
@@ -244,9 +315,10 @@ fn roulette_mating(
     for i in 0..POP_SIZE / 2 {
         //Elegir punto de corte de acuerdo a prob_rep
         // FIXME: utilizar fn equivalent_index();
-        let k: usize = random_range(1, IND_SIZE as isize) as usize;
+        let k: usize = utils::random_range(1, IND_SIZE as isize) as usize;
 
-        let sons: (Candidate, Candidate) = mate(&fathers[i], &mothers[i], k);
+        let sons: (Candidate, Candidate) =
+            genetic_alg::functions::mate(&fathers[i], &mothers[i], k);
 
         new_candidates.push(sons.0);
         new_candidates.push(sons.1);
@@ -264,6 +336,9 @@ fn elitist_mating(
     prob_rep: f64,
     opt_type: &OptimizeType,
 ) -> CandidateList {
+    use genetic_alg::functions::*;
+    use utils::*;
+
     // @prob_rep: Probability of reproduction
     // @n_out: # of Candidates selected each round for reproduction
     let mut best_candidates: CandidateList = Vec::new();
@@ -273,10 +348,20 @@ fn elitist_mating(
     // Sort candidates by fitness (lowest first)
     match *opt_type {
         // Ordena el vector en forma ascendente ->  [0,1,...,N]
-        OptimizeType::MAX => candidates.sort_by(|a, b| a.fitness.cmp(&b.fitness)),
+        OptimizeType::MAX => candidates.sort_by(|a, b| a.fitness.partial_cmp(&b.fitness).unwrap()),
         // Ordena el vector en forma descendente -> [N,...,1,0]
-        OptimizeType::MIN => candidates.sort_by(|a, b| b.fitness.cmp(&a.fitness)),
+        OptimizeType::MIN => candidates.sort_by(|a, b| b.fitness.partial_cmp(&a.fitness).unwrap()),
     };
+
+    match *opt_type {
+        // Ordena el vector en forma ascendente ->  [0,1,...,N]
+        OptimizeType::MAX => debug_msg("Maximizando"),
+        // Ordena el vector en forma descendente -> [N,...,1,0]
+        OptimizeType::MIN => debug_msg("Minimizando"),
+    };
+
+    debug_msg("Ordenados");
+    debug_candidates(candidates);
 
     //Pop last @n_selected elements from vector and push to best_candidates
     for i in 0..n_selected {
@@ -288,6 +373,9 @@ fn elitist_mating(
         };
         best_candidates.push(current_candidate);
     }
+
+    debug_msg("Seleccionados");
+    debug_candidates(&best_candidates);
 
     //Probar de la siguiente manera:
     // Para cada Ciclo, hasta que no se junten los N requeridos:
@@ -351,7 +439,7 @@ fn basic_genetic_algorithm(
     let mut avg_fitness_over_time_y: [FitnessReturn; GEN] = Default::default();
 
     for i in 0..GEN {
-        // Initialize vectors with arbitrary values
+        // Initialize diagnostic vectors with arbitrary values
         fitness_over_time_x[i] = i;
         avg_fitness_over_time_x[i] = i;
     }
@@ -359,19 +447,21 @@ fn basic_genetic_algorithm(
     let mut total_fitness: FitnessReturn;
 
     // Generate initial round of candidates
-    let mut candidates: CandidateList = generate_initial_candidates();
+    // TODO: Not generic
+    let mut candidates: CandidateList = generate_initial_candidates(n, IND_SIZE);
 
     println!("Probabilidad de mutación: {}", MUT_PR);
 
     for _gen in 0..GEN {
-        total_fitness = 0;
+        total_fitness = 0 as FitnessReturn;
 
         let mut max_fitness: FitnessReturn = match *opt {
-            OptimizeType::MAX => -1 as FitnessReturn,
-            OptimizeType::MIN => 1000 as FitnessReturn,
+            OptimizeType::MAX => std::isize::MIN as FitnessReturn,
+            OptimizeType::MIN => std::isize::MAX as FitnessReturn,
         };
 
         // Obtener fitness de cada candidato
+        // TODO: Not generic
         for candidate in &mut candidates {
             candidate.fitness = fitness(&candidate.value);
             total_fitness += candidate.fitness;
@@ -395,33 +485,26 @@ fn basic_genetic_algorithm(
         }
 
         fitness_over_time_y[_gen] = max_fitness;
-        avg_fitness_over_time_y[_gen] = total_fitness / (POP_SIZE as isize);
+        avg_fitness_over_time_y[_gen] = total_fitness / (POP_SIZE as FitnessReturn);
 
         println!(
             "Fitness máximo de la generación {}°: {}",
             _gen + 1,
             max_fitness
         );
-        println!("Fitness promedio: {} ", total_fitness / (POP_SIZE as isize));
-        println!("    Candidatos:");
-        for candidate in &mut candidates {
-            println!(
-                "     * ( {}, {}, {}, {} )",
-                candidate.value,
-                bin_to_int(&candidate.value),
-                fitness(&candidate.value),
-                &candidate.mutated
-            );
-        }
-
-        candidates = mating_fn(
-            &mut candidates,
-            POP_SIZE,
-            SELECTED_EACH_ROUND,
-            REP_PR,
-            &OptimizeType::MAX,
+        println!(
+            "Fitness promedio: {} ",
+            total_fitness / (POP_SIZE as FitnessReturn)
         );
+        println!("    Candidatos:");
+        debug_candidates(&candidates);
 
+        // Mating
+        // TODO: Not generic, use CandidateList.mate() instead
+        candidates = mating_fn(&mut candidates, POP_SIZE, SELECTED_EACH_ROUND, REP_PR, opt);
+
+        // Mutation
+        // TODO: Not generic, use CandidateList.mutate() instead
         for candidate in &mut candidates {
             mutate(candidate, MUT_PR, opt);
         }
@@ -443,9 +526,19 @@ fn basic_genetic_algorithm(
     let g = avg_fitness_over_time.show();
 }
 
-fn debugmsg(callee: &str, msg: &str) {
-    if DEBUG {
-        println!("           {}::{}", callee.yellow(), msg);
+fn debug_candidate(candidate: &Candidate) {
+    println!(
+        "     * ( {}, {}, {:.2}, {})",
+        candidate.value,
+        utils::bin_to_int(&candidate.value),
+        candidate.fitness,
+        candidate.mutated,
+    );
+}
+
+fn debug_candidates(candidates: &CandidateList) {
+    for candidate in candidates {
+        debug_candidate(candidate);
     }
 }
 
@@ -457,7 +550,7 @@ mod tests {
     fn ordering_as_expected() {
         let mut candidates: CandidateList = Default::default();
         for i in 0..4 {
-            let current_candidate = Candidate::new(String::new(), i, false);
+            let current_candidate = Candidate::new(String::from("00000000"), i, false);
             candidates.push(current_candidate);
         }
         candidates.sort_by(|a, b| a.fitness.cmp(&b.fitness));
@@ -468,6 +561,8 @@ mod tests {
         assert_eq!(a, [0, 1, 2, 3]);
 
         candidates.sort_by(|a, b| b.fitness.cmp(&a.fitness));
+        debug_msg("Descendente");
+        debug_candidates(&candidates);
         for i in 0..4 {
             a[i] = candidates[i].fitness;
         }
