@@ -1,19 +1,21 @@
 ## TODO
 
-* Marcar código no genérico
+* Correción de errores en StopCondition::BOUND() [Loop infinito]
 * Boundaries
 * Módulos
 * Error Handling
-* fn diagnostics(CandidateList) -> (MaxFitness, AvgFitness)
-* Función DEBUG
 * Diferentes ramas para diferentes condiciones de paro
-* struct InternalState: InternalState.meets(&StopCondition)
 * struct Range (Para limitar y dar estructura a los parámetros)
 * Wrapper para Parámetro con el fin de delimitar positivos, negativos y bits
   decimales
 
 ## Changelog
 
+* Función DEBUG
+* struct InternalState: InternalState.meets(&StopCondition)
+* fn diagnostics(CandidateList) -> (MaxFitness, AvgFitness)
+* Separar implementación de definición
+* Marcar código no genérico
 * Enum para tipo de optimización (MAX/MIN)
 * Implementar ord, eq para f64 
     NOTA: No se implmenetaron los traits, pero se cambió el método de
