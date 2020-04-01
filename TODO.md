@@ -1,6 +1,7 @@
 ## TODO
 
-* Correción de errores en StopCondition::BOUND() [Loop infinito]
+* Implementación de candidato Float
+* Función arbitraria de reproducción?
 * Boundaries
 * Módulos
 * Error Handling
@@ -11,6 +12,7 @@
 
 ## Changelog
 
+* Correción de errores en StopCondition::BOUND() [Loop infinito]
 * Función DEBUG
 * struct InternalState: InternalState.meets(&StopCondition)
 * fn diagnostics(CandidateList) -> (MaxFitness, AvgFitness)

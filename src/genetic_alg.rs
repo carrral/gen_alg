@@ -119,7 +119,8 @@ impl InternalState {
             StopCondition::ERROR_MARGIN(value) => value <= self.error_margin,
 
             StopCondition::BOUND(value, radix) => {
-                (value - self.max_achieved_fitness).abs() <= radix
+                self.max_achieved_fitness >= value
+                    || (value - self.max_achieved_fitness).abs() <= radix
             }
         };
 

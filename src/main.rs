@@ -1,10 +1,9 @@
-#![allow(dead_code)]
+// #![allow(dead_code)]
 #![allow(non_camel_case_types)]
 #![allow(unused_variables)]
 
 pub mod genetic_alg;
 
-use genetic_alg::constants::*;
 use genetic_alg::types::*;
 use genetic_alg::{utils, Candidate, CandidateList, OptimizeType, StopCondition};
 use gnuplot::{Caption, Color, Figure};
@@ -107,11 +106,11 @@ impl CandidateList<isize> for IntegerCandidateList {
         // Select @n_out best candidates
         let best_candidates: &[IntegerCandidate] = self.get_n_fittest(n_selected, opt_type);
 
-        if DEBUG {
-            println!();
-            debug_msg("Seleccionados");
-            debug_candidates(&best_candidates);
-        }
+        // if DEBUG {
+        // println!();
+        // debug_msg("Seleccionados");
+        // debug_candidates(&best_candidates);
+        // }
 
         //Probar de la siguiente manera:
         // Para cada Ciclo, hasta que no se junten los N requeridos:
@@ -336,10 +335,8 @@ fn main() {
         0.5,
         0.1,
         &OptimizeType::MAX,
-        &StopCondition::CYCLES(10),
+        &StopCondition::BOUND(65025.0, 0.0),
     );
-
-    // println!("Resultado: {}", result);
 }
 
 // ==-- UTILS --==
@@ -389,10 +386,15 @@ fn basic_genetic_algorithm<T>(
     internal_state.update_values(tup.0);
 
     loop {
+        utils::debug_msg(&*format!("Generación {}:", internal_state.cycles));
+
         if internal_state.satisfies(stop_cond) {
+            candidates.debug();
+            utils::debug_msg("FIN\n\n");
             break;
         }
-        // candidates.debug();
+
+        candidates.debug();
 
         candidates.mate(n, selected_per_round, mating_pr, opt);
         candidates.mutate_list(mut_pr, opt);
@@ -428,21 +430,22 @@ fn basic_genetic_algorithm<T>(
         &[Caption("Fitness promedio / Tiempo"), Color("red")],
     );
 
-    // let f = fitness_over_time.show();
-    // let g = avg_fitness_over_time.show();
+    let f = fitness_over_time.show();
+    let g = avg_fitness_over_time.show();
 
     return results.0;
 }
 
-fn debug_candidates<T>(candidates: &[impl Candidate<T>]) {
-    for candidate in candidates {
-        candidate.debug();
-    }
-}
+// fn debug_candidates<T>(candidates: &[impl Candidate<T>]) {
+// for candidate in candidates {
+// candidate.debug();
+// }
+// }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use genetic_alg::InternalState;
 
     fn setup() -> IntegerCandidateList {
         let vals = ["0001", "0000", "0010", "0011"];
@@ -494,5 +497,20 @@ mod tests {
             };
             assert_eq!(descendente[i], x);
         }
+    }
+
+    #[test]
+    fn test_stop_condition() {
+        let mut internal = InternalState::default();
+        internal.max_achieved_fitness = 99.0;
+        let stop = StopCondition::BOUND(100.0, 1.0);
+
+        assert_eq!(internal.satisfies(&stop), true);
+
+        internal.max_achieved_fitness = 98.9;
+        assert_ne!(internal.satisfies(&stop), true);
+
+        internal.max_achieved_fitness = 102.0;
+        assert_eq!(internal.satisfies(&stop), true);
     }
 }
