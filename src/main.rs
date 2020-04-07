@@ -1,6 +1,6 @@
 // #![allow(dead_code)]
 #![allow(non_camel_case_types)]
-#![allow(unused_variables)]
+// #![allow(unused_variables)]
 
 pub mod genetic_alg;
 
@@ -9,11 +9,58 @@ use genetic_alg::{utils, Candidate, CandidateList, OptimizeType, StopCondition};
 use gnuplot::{Caption, Color, Figure};
 use rand::{distributions::WeightedIndex, prelude::*, Rng};
 
-// ==-- IMPLEMENTATIONS --==
+// ==-- STRUCTS --==
 
 pub struct IntegerCandidateList {
     ind_size: usize,
     candidates: Vec<IntegerCandidate>,
+}
+
+#[derive(Clone)]
+pub struct IntegerCandidate {
+    pub value: String,
+    pub fitness: Option<FitnessReturn>,
+    pub mutated: bool,
+    pub selected: bool,
+}
+
+struct MultivariedFloatCandidate {
+    pub vars: MultivariedFloat,
+    pub value: String,
+    pub fitness: Option<FitnessReturn>,
+    pub mutated: bool,
+    pub selected: bool,
+}
+
+#[derive(Clone)]
+struct MultivariedFloat {
+    ///Wrapper struct for (n0,n1,...) type of values, doesn't hold info about
+    ///its candidate representation
+    //n_vars is always equal to vars_value.len()
+    pub n_vars: usize,
+    pub vars_value: Vec<f32>,
+}
+
+// ==-- STRUCT IMPLEMENTATIONS --==
+impl IntegerCandidate {
+    pub fn new(value: String) -> Self {
+        IntegerCandidate {
+            value,
+            fitness: None,
+            mutated: false,
+            selected: false,
+        }
+    }
+
+    fn get_integer_representation(&self) -> isize {
+        let slice: &str = &*self.value;
+        let self_int: isize = isize::from_str_radix(slice, 2).unwrap();
+        return self_int;
+    }
+
+    fn len(&self) -> usize {
+        self.value.chars().count()
+    }
 }
 
 impl IntegerCandidateList {
@@ -39,6 +86,101 @@ impl IntegerCandidateList {
     }
 }
 
+impl MultivariedFloat {
+    pub fn to_string(&self) -> String {
+        let mut s = String::new();
+        for i in 0..(self.n_vars - 1) {
+            let mut _s = self.vars_value[i].to_string();
+            _s.push_str(",");
+            s.push_str(&*_s)
+        }
+        s.push_str(&self.vars_value[self.n_vars - 1].to_string());
+        format!("({})", s)
+    }
+
+    pub fn update_vals(&mut self, values: &Vec<f32>) {
+        //Raises error if values.len() != self.n_vars
+        if values.len() != self.n_vars {
+            panic!(format!(
+                "Mismatch of variable length: expected {}, got {} ",
+                self.n_vars,
+                values.len()
+            ));
+        }
+
+        for i in 0..self.n_vars {
+            self.vars_value[i] = values[i];
+        }
+    }
+
+    pub fn get_vals(&self) -> &Vec<f32> {
+        &self.vars_value
+    }
+}
+
+impl<'a> MultivariedFloatCandidate {
+    const FLOAT_LEN: usize = 3;
+
+    pub fn len(&self) -> usize {
+        self.value.chars().count()
+    }
+
+    fn get_var_substrings(&self) -> Vec<&str> {
+        // Returns a vector of f32 values entirely dependant on bit string
+
+        // Sub divide single candidate string into individual sub strings
+        let mut substrings: Vec<&str> = vec![""; self.vars.n_vars];
+
+        let r = MultivariedFloatCandidate::FLOAT_LEN;
+
+        // Assumes self.value.len() == self.vars.n_vars*FLOAT_LEN
+        for start_index in (0..self.len()).step_by(r) {
+            substrings[start_index / r] = &self.value[start_index..start_index + r];
+        }
+
+        return substrings;
+    }
+
+    fn get_vars_from_bit_string(&self) -> Vec<f32> {
+        /// Returns a vector of the floats containted in self.value (bit string)
+        /// Internal use meant only for updating MultivariedFloat's values, not intended for
+        /// use by the user.
+        let substrings = self.get_var_substrings();
+        let values = substrings
+            .iter()
+            .map(|x| utils::parse_f32(&x.to_string()))
+            .collect::<Vec<f32>>();
+
+        return values;
+    }
+
+    pub fn new(n_vars: usize, value: String) -> Self {
+        //n_vars: Number of variables
+        //value: bit string representation of parameters
+
+        let len = value.chars().count();
+
+        if !(len / MultivariedFloatCandidate::FLOAT_LEN == n_vars
+            && len % MultivariedFloatCandidate::FLOAT_LEN == 0)
+        {
+            panic!("Length of value String and number of variables is incompatible");
+        }
+
+        MultivariedFloatCandidate {
+            vars: MultivariedFloat {
+                n_vars,
+                vars_value: Default::default(),
+            },
+            value,
+            fitness: None,
+            mutated: false,
+            selected: false,
+        }
+    }
+}
+
+//==-- TRAIT IMPLEMENTATIONS --==
+
 impl CandidateList<isize> for IntegerCandidateList {
     fn len(&self) -> usize {
         self.candidates.len()
@@ -46,13 +188,8 @@ impl CandidateList<isize> for IntegerCandidateList {
 
     // Generates an initial vector of Random Candidates and stores it in self
     fn generate_initial_candidates(&mut self, requested: usize) {
-        for i in 0..requested {
-            let mut s: String = String::new();
-
-            for j in 0..self.ind_size {
-                let r = utils::random_range(0, 2).to_string();
-                s.push_str(&r);
-            }
+        for _ in 0..requested {
+            let s: String = utils::generate_random_bitstring(self.ind_size);
             let c = IntegerCandidate::new(s);
             self.candidates.push(c);
         }
@@ -62,8 +199,8 @@ impl CandidateList<isize> for IntegerCandidateList {
     fn get_diagnostics(&self, opt_type: &OptimizeType) -> (FitnessReturn, FitnessReturn) {
         let mut total_fitness = 0.0;
         let mut max_fitness = match *opt_type {
-            OptimizeType::MAX => std::f64::MIN,
-            OptimizeType::MIN => std::f64::MAX,
+            OptimizeType::MAX => std::f32::MIN,
+            OptimizeType::MIN => std::f32::MAX,
         };
 
         if self.candidates[0].get_fitness().is_none() {
@@ -89,11 +226,11 @@ impl CandidateList<isize> for IntegerCandidateList {
                 }
             };
         }
-        (max_fitness, total_fitness / self.len() as f64)
+        (max_fitness, total_fitness / self.len() as f32)
     }
 
     // Updates internal CandidateList
-    fn mate(&mut self, n_out: usize, n_selected: usize, prob_rep: f64, opt_type: &OptimizeType) {
+    fn mate(&mut self, n_out: usize, n_selected: usize, prob_rep: f32, opt_type: &OptimizeType) {
         //FIXME: Regresa Result si n_selected > n_out o n_selected > self.len
         use genetic_alg::utils::*;
 
@@ -123,16 +260,14 @@ impl CandidateList<isize> for IntegerCandidateList {
         //                  Candidato 2 -> Candidato 1
         //                  Candidato 3 -> Candidato 2
 
-        let index: usize = 0;
         let mut offset: usize = 1;
         let k: usize = splitting_point(size, prob_rep);
-        let j = 0;
 
         loop {
             let mut break_loop = false;
             for i in 0..n_selected {
                 let offset_index = (i + offset) % n_selected;
-                let current_offspring_vals = genetic_alg::functions::cross_strings(
+                let current_offspring_vals = genetic_alg::utils::cross_strings(
                     &best_candidates[i].value,
                     &best_candidates[offset_index].value,
                     k,
@@ -163,8 +298,8 @@ impl CandidateList<isize> for IntegerCandidateList {
     }
 
     // Operates on the whole list with a given probability mut_pr
-    fn mutate_list(&mut self, mut_pr: f64, opt: &OptimizeType) {
-        let cointoss = [mut_pr, 1f64 - mut_pr];
+    fn mutate_list(&mut self, mut_pr: f32, opt: &OptimizeType) {
+        let cointoss = [mut_pr, 1f32 - mut_pr];
         for candidate in &mut self.candidates {
             // result: 0 -> mutate, 1 -> do nothing
             let result = utils::roulette(&cointoss);
@@ -209,35 +344,6 @@ impl Default for IntegerCandidateList {
     }
 }
 
-#[derive(Clone)]
-pub struct IntegerCandidate {
-    pub value: String,
-    pub fitness: Option<FitnessReturn>,
-    pub mutated: bool,
-    pub selected: bool,
-}
-
-impl IntegerCandidate {
-    pub fn new(value: String) -> Self {
-        IntegerCandidate {
-            value,
-            fitness: None,
-            mutated: false,
-            selected: false,
-        }
-    }
-
-    fn get_integer_representation(&self) -> isize {
-        let slice: &str = &*self.value;
-        let self_int: isize = isize::from_str_radix(slice, 2).unwrap();
-        return self_int;
-    }
-
-    fn len(&self) -> usize {
-        self.value.len()
-    }
-}
-
 impl Candidate<isize> for IntegerCandidate {
     fn eval_fitness(&mut self, f: fn(isize) -> FitnessReturn) -> FitnessReturn {
         let self_int = self.get_integer_representation();
@@ -270,35 +376,7 @@ impl Candidate<isize> for IntegerCandidate {
     }
 
     fn mutate(&mut self, opt_type: &OptimizeType) {
-        let mut mutated = String::new();
-
-        let (unwanted_char, wanted) = match *opt_type {
-            OptimizeType::MAX => ('0', '1'),
-            OptimizeType::MIN => ('1', '0'),
-        };
-        let mut k: usize;
-        let mut tries: usize = 0;
-        loop {
-            // TODO: Cambiar intento al azar por iterción izquierda->derecha, derecha -> izquierda
-            k = utils::random_range(0, self.len() as isize) as usize;
-            let char_array: Vec<char> = self.value.chars().collect();
-            if char_array[k] == unwanted_char || tries > self.len() {
-                break;
-            }
-
-            tries += 1;
-        }
-
-        let mut i: usize = 0;
-        for c in self.value.chars() {
-            let mutated_char = match i {
-                a if a == k => wanted,
-                _ => c,
-            };
-            mutated.push(mutated_char);
-            i += 1;
-        }
-
+        let mutated = utils::generic_mutate(&self.value, opt_type);
         self.value = mutated;
         self.mutated = true;
     }
@@ -310,8 +388,46 @@ impl Default for IntegerCandidate {
     }
 }
 
-// ==-- TRAITS --==
+impl<'a> Candidate<MultivariedFloat> for MultivariedFloatCandidate {
+    // Evalúa el valor de fitness de self.value, lo asigna en self.fitness
+    // y lo regresa.
+    fn eval_fitness(&mut self, f: fn(MultivariedFloat) -> FitnessReturn) -> FitnessReturn {
+        //Clone?
+        // let v: MultivariedFloat = self.vars.clone();
+        let f = f(self.vars.clone());
+        println!("{}", self.vars.to_string());
 
+        self.fitness = Some(f);
+        return f;
+    }
+
+    fn to_string(&self) -> String {
+        let fit = match self.get_fitness() {
+            Some(v) => v.to_string(),
+            None => String::from("UNDEFINED"),
+        };
+        format!(
+            "MVFCandidate{{vars:{}, fitness:{},selected:{}}}",
+            self.vars.to_string(),
+            fit,
+            self.selected
+        )
+    }
+
+    fn get_fitness(&self) -> Option<FitnessReturn> {
+        self.fitness
+    }
+    fn debug(&self) {
+        println!("{}", self.to_string());
+    }
+    fn mutate(&mut self, opt_type: &OptimizeType) {
+        self.value = utils::generic_mutate(&self.value, opt_type);
+
+        //Update vars_value
+    }
+}
+
+// TODO: Mover
 trait ShowGraph {
     fn show_graph(
         x_axis: &[usize],
@@ -322,8 +438,9 @@ trait ShowGraph {
 }
 
 fn squared(x: isize) -> FitnessReturn {
-    isize::pow(x, 2) as f64
+    isize::pow(x, 2) as f32
 }
+
 fn main() {
     let mut l = IntegerCandidateList::default();
 
@@ -339,15 +456,13 @@ fn main() {
     );
 }
 
-// ==-- UTILS --==
-
 fn basic_genetic_algorithm<T>(
     n: usize, // Tamaño de la población inicial
     selected_per_round: usize,
     candidates: &mut impl CandidateList<T>,
     fitness_fn: fn(T) -> FitnessReturn, // Función de adaptación
-    mating_pr: f64,
-    mut_pr: f64,
+    mating_pr: f32,
+    mut_pr: f32,
     opt: &OptimizeType, // MAX/MIN
     stop_cond: &StopCondition,
 ) -> Result<T, &'static str> {
@@ -356,7 +471,7 @@ fn basic_genetic_algorithm<T>(
 
     // No sabe de una respuesta correcta, solo continúa hasta que stop_cond se cumple
 
-    let mut results: (Result<T, &'static str>, FitnessReturn) = (Err("No calculations done"), 0f64);
+    let mut results: (Result<T, &'static str>, FitnessReturn) = (Err("No calculations done"), 0f32);
     let mut fitness_over_time = Figure::new();
     let mut avg_fitness_over_time = Figure::new();
 
@@ -436,12 +551,6 @@ fn basic_genetic_algorithm<T>(
     return results.0;
 }
 
-// fn debug_candidates<T>(candidates: &[impl Candidate<T>]) {
-// for candidate in candidates {
-// candidate.debug();
-// }
-// }
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -512,5 +621,37 @@ mod tests {
 
         internal.max_achieved_fitness = 102.0;
         assert_eq!(internal.satisfies(&stop), true);
+    }
+
+    #[test]
+    fn test_get_substrings() {
+        let mvfc = MultivariedFloatCandidate::new(3, String::from("000111010"));
+
+        assert_eq!(mvfc.vars.n_vars, 3);
+        let test_substrings = vec!["000", "111", "010"];
+        let substrings = mvfc.get_var_substrings();
+        assert_eq!(substrings, test_substrings);
+    }
+
+    #[test]
+    fn test_two_complement() {}
+
+    #[test]
+    fn test_pow() {
+        let s: f32 = 500.0;
+        assert_eq!(s * 10f32.powi(-3), 0.5);
+    }
+
+    #[test]
+    fn test_parse_f32() {
+        assert_eq!(
+            utils::parse_f32(&"00111110001000000000000000000000".to_string()),
+            0.15625,
+        );
+
+        assert_eq!(
+            utils::parse_f32(&"11000101101010010111101011101101".to_string()),
+            -5423.36572265625
+        );
     }
 }

@@ -1,18 +1,24 @@
 ## TODO
 
+
+* Mandarfuncion bin -> uint a wrapper
+* Función para conversión de bin -> int con complemento a 2
+* Implementaciónde candidato multivariado
 * Implementación de candidato Float
+* Implementación de StopCondition::ERROR_MARGIN
 * Función arbitraria de reproducción?
 * Boundaries
+* struct Range (Para limitar y dar estructura a los parámetros)
 * Módulos
 * Error Handling
-* Diferentes ramas para diferentes condiciones de paro
-* struct Range (Para limitar y dar estructura a los parámetros)
 * Wrapper para Parámetro con el fin de delimitar positivos, negativos y bits
   decimales
 
 ## Changelog
 
 * Correción de errores en StopCondition::BOUND() [Loop infinito]
+* Función arbitraria de generación de cadenas de bits
+* Diferentes ramas para diferentes condiciones de paro
 * Función DEBUG
 * struct InternalState: InternalState.meets(&StopCondition)
 * fn diagnostics(CandidateList) -> (MaxFitness, AvgFitness)
