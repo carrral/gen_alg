@@ -55,7 +55,9 @@ pub trait Candidate<T> {
     fn mutate(&mut self, opt_type: &OptimizeType);
 }
 
-pub trait CandidateList<T> {
+pub trait CandidateList<T, U> {
+    /// @T: Type that will be held in internal candidate vector
+    /// @U: Type that will be evaluated in the fitness function provided
     // Generates an initial vector of Random Candidates
     fn generate_initial_candidates(&mut self, requested: usize);
 
@@ -69,7 +71,7 @@ pub trait CandidateList<T> {
     fn mutate_list(&mut self, mut_pr: f32, opt: &OptimizeType);
 
     //Evaluates fitness for the whole candidate list
-    fn eval_fitness(&mut self, f: fn(T) -> FitnessReturn);
+    fn eval_fitness(&mut self, f: fn(U) -> FitnessReturn);
 
     // fn get_fittest(&self, opt_type: &OptimizeType) -> &dyn Candidate<T>;
 
@@ -78,7 +80,9 @@ pub trait CandidateList<T> {
     fn debug(&self);
 
     // Regresa el mejor resultado encontrado en una generación
-    fn get_results(&mut self, opt_type: &OptimizeType) -> (T, FitnessReturn);
+    fn get_results(&mut self, opt_type: &OptimizeType) -> (U, FitnessReturn);
+
+    fn sort(&mut self, opt_type: &OptimizeType);
 }
 
 pub struct InternalState {
@@ -155,8 +159,8 @@ pub mod utils {
         let char_array: Vec<char> = bin_str.chars().collect();
 
         for c in &char_array {
-            if *c != '0' || *c != '1' {
-                panic!("Invalid values found while parsing bit string");
+            if *c != '0' && *c != '1' {
+                panic!("Invalid values found while parsing bit string: {}", *c);
             }
         }
 
@@ -184,9 +188,6 @@ pub mod utils {
             }
             s
         };
-
-        utils::debug_msg(&*format!("({},{})", mantissa_str, exponent_str));
-        utils::debug_msg(&*format!("({},{},{})", sign, mantissa, exponent));
 
         // return sign * mantissa.pow(exponent) as f32;
         (sign as f32) * (mantissa as f32) * 2f32.powi(exponent - 127i32)

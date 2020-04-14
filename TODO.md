@@ -1,21 +1,26 @@
 ## TODO
 
+* Nota: La mutación de MultivariedFloatCandidate tiene que llevarse a cabo en
+  los dígitos más significativos.
 
-* Mandarfuncion bin -> uint a wrapper
-* Función para conversión de bin -> int con complemento a 2
-* Implementaciónde candidato multivariado
-* Implementación de candidato Float
+* Ajustar métodos que puedan regresar Result (a nivel impl)
+
+* Mejorar método .to_string() de MultivariedFloatCandidate
+* Wrapper para Parámetro con el fin de delimitar positivos, negativos y bits
+  decimales
 * Implementación de StopCondition::ERROR_MARGIN
-* Función arbitraria de reproducción?
 * Boundaries
 * struct Range (Para limitar y dar estructura a los parámetros)
 * Módulos
 * Error Handling
-* Wrapper para Parámetro con el fin de delimitar positivos, negativos y bits
-  decimales
+* Mandarfuncion bin -> uint a wrapper
 
 ## Changelog
 
+* Implementaciónde candidato multivariado Float
+* Implementación de MVFCandidateList
+* Función arbitraria de reproducción? (IMPOSIBLE CON LA IMPLEMENTACIÓN ACTUAL DE
+  Candidate)
 * Correción de errores en StopCondition::BOUND() [Loop infinito]
 * Función arbitraria de generación de cadenas de bits
 * Diferentes ramas para diferentes condiciones de paro
