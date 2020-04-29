@@ -1,11 +1,15 @@
 ## TODO
 
-* Nota: La mutación de MultivariedFloatCandidate tiene que llevarse a cabo en
-  los dígitos más significativos.
+### URGENTE
 
+* Corregir: la función de reproducción no elige correctamente los valores
+* Implementar FitnessFunction
+* Cambiar el nombre a MultivariedFloat
+* Guardar máximos y mínimos globales dentro del algoritmo
+
+
+* Niveles de verbosidad
 * Ajustar métodos que puedan regresar Result (a nivel impl)
-
-* Mejorar método .to_string() de MultivariedFloatCandidate
 * Wrapper para Parámetro con el fin de delimitar positivos, negativos y bits
   decimales
 * Implementación de StopCondition::ERROR_MARGIN
@@ -17,6 +21,7 @@
 
 ## Changelog
 
+* trait Function{} (wrapper)
 * Implementaciónde candidato multivariado Float
 * Implementación de MVFCandidateList
 * Función arbitraria de reproducción? (IMPOSIBLE CON LA IMPLEMENTACIÓN ACTUAL DE
