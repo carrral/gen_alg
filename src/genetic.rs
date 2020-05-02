@@ -440,6 +440,7 @@ pub mod impls {
         pub struct RCCandidate {
             vars: MultivariedFloat,
             fitness: Option<FitnessReturn>,
+            selected_for_mating: bool,
         }
 
         impl RCCandidate {
@@ -450,6 +451,7 @@ pub mod impls {
                         vars_value: values.clone(),
                     },
                     fitness: None,
+                    selected_for_mating: false,
                 }
             }
         }
@@ -464,7 +466,16 @@ pub mod impls {
             }
 
             fn to_string(&self) -> String {
-                self.vars.to_string()
+                let fit = match self.fitness {
+                    Some(v) => v.to_string(),
+                    None => String::from("UNDEFINED"),
+                };
+                format!(
+                    "{},fitness:{}, selected: {}",
+                    self.vars.to_string(),
+                    fit,
+                    self.selected_for_mating,
+                )
             }
 
             fn get_fitness(&self) -> Option<FitnessReturn> {
@@ -508,8 +519,14 @@ pub mod impls {
                 self.sort(opt_type);
 
                 let start_index: usize = self.len() - n;
+
+                for i in start_index..self.len() {
+                    self.candidates[i].selected_for_mating = true;
+                }
                 &self.candidates[start_index..]
             }
+
+            pub fn set_debug(debug: bool) {}
         }
 
         /// This implementation of a Single Precision Floating Point GA requires a lower and upper bound for every dimmension.
@@ -635,8 +652,13 @@ pub mod impls {
 
                     let index_m = (i + s) % list_len;
                     let index_f = (i + s + d) % list_len;
-                    let mother: RCCandidate = selected[index_m].clone();
-                    let father: RCCandidate = selected[index_f].clone();
+                    assert!(index_m != index_f);
+                    let mut mother: RCCandidate = selected[index_m].clone();
+                    mother.selected_for_mating = true;
+
+                    let mut father: RCCandidate = selected[index_f].clone();
+                    father.selected_for_mating = true;
+
                     let n_vars = mother.vars.n_vars;
                     let mut son_a = RCCandidate::new(n_vars, &Vec::with_capacity(n_vars));
                     let mut son_b = RCCandidate::new(n_vars, &Vec::with_capacity(n_vars));
@@ -647,8 +669,8 @@ pub mod impls {
                         let xi_1 = mother.vars.vars_value[z];
                         let xi_2 = father.vars.vars_value[z];
 
-                        let yi_1 = alpha * xi_1 + (1.0 - alpha) * xi_1;
-                        let yi_2 = alpha * xi_2 + (1.0 - alpha) * xi_2;
+                        let yi_1 = alpha * xi_1 + (1.0 - alpha) * xi_2;
+                        let yi_2 = alpha * xi_2 + (1.0 - alpha) * xi_1;
                         son_a.vars.vars_value.push(yi_1);
                         son_b.vars.vars_value.push(yi_2);
                     }
@@ -681,7 +703,7 @@ pub mod impls {
                         let result = roulette(&cointoss);
 
                         if result == 0 {
-                            println!("Mutated!, index:{}", i);
+                            // println!("Mutated!, index:{}", i);
                             mutated_candidate_index = candidate_index;
                             mutated_flag = true;
                             // Data needed for mutation:
@@ -737,13 +759,13 @@ pub mod impls {
                                 .vars
                                 .vars_value[mutated_candidate_val_index];
                             mutated_value = vk_mutated(old_value);
-                            self.candidates[mutated_candidate_index].debug();
-                            println!(
-                                "Old val: {}, New: {}",
-                                self.candidates[mutated_candidate_index].vars.vars_value
-                                    [mutated_candidate_val_index],
-                                mutated_value
-                            );
+                            // self.candidates[mutated_candidate_index].debug();
+                            // println!(
+                            // "Old val: {}, New: {}",
+                            // self.candidates[mutated_candidate_index].vars.vars_value
+                            // [mutated_candidate_val_index],
+                            // mutated_value
+                            // );
                             self.candidates[mutated_candidate_index].vars.vars_value
                                 [mutated_candidate_val_index] = mutated_value;
                         } else {

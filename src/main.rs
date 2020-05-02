@@ -49,7 +49,7 @@ fn multivalued_fn2(mvf: MultivariedFloat) -> FitnessReturn {
 
     let x: f32 = mvf.vars_value[0];
     let y: f32 = mvf.vars_value[1];
-    -(x).powi(2) - (y).powi(2) + 5.0
+    -(x - 5.0).powi(2) - (y - 7.0).powi(2) + 5.0
 }
 
 fn main() {
@@ -61,14 +61,14 @@ fn main() {
     mvfl.set_bounds(bounds);
 
     let results = basic_genetic_algorithm(
-        100,
-        20,
+        16,
+        4,
         &mut mvfl,
         rosenbrock_banana,
         0.6,
         0.01,
         &OptimizeType::MIN,
-        &StopCondition::CYCLES(10000),
+        &StopCondition::CYCLES(30),
     );
 
     match results {
@@ -110,7 +110,7 @@ fn basic_genetic_algorithm<T, U>(
 
     utils::debug_msg(&*format!("Tamaño de la población: {}", n));
     utils::debug_msg(&*format!("Optimización: {}", &*opt.to_string()));
-    utils::debug_msg(&*format!("Probabilidad de reproducciónr: {}", mating_pr));
+    utils::debug_msg(&*format!("Probabilidad de reproducción: {}", mating_pr));
     utils::debug_msg(&*format!("Probabilidad de mutación: {}", mut_pr));
 
     candidates.track_stop_cond(&stop_cond)?;
@@ -144,6 +144,7 @@ fn basic_genetic_algorithm<T, U>(
         }
 
         candidates.debug();
+        println!("\n");
 
         candidates.track_internal_state(&internal_state);
 
