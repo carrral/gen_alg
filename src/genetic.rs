@@ -124,6 +124,9 @@ pub mod traits {
 
         fn sort(&mut self, opt_type: &OptimizeType);
 
+        /// For debugging purposes
+        fn mark_for_selection(&mut self, opt_type: &OptimizeType, n_selected: usize);
+
         /// Gets info from @stop_cond at the beginning of the algorithm
         fn track_stop_cond(&mut self, stop_cond: &StopCondition) -> Result<bool, String>;
 
@@ -250,6 +253,7 @@ pub mod impls {
                 }
             }
 
+            fn mark_for_selection(&mut self, opt_type: &OptimizeType, n_selected: usize) {}
             // Returns (max_fitness, avg_fitness)
             fn get_diagnostics(&self, opt_type: &OptimizeType) -> (FitnessReturn, FitnessReturn) {
                 let mut total_fitness = 0.0;
@@ -520,9 +524,6 @@ pub mod impls {
 
                 let start_index: usize = self.len() - n;
 
-                for i in start_index..self.len() {
-                    self.candidates[i].selected_for_mating = true;
-                }
                 &self.candidates[start_index..]
             }
 
@@ -566,6 +567,15 @@ pub mod impls {
 
                     let new_candidate = RCCandidate::new(self.n_vars, &values);
                     self.candidates.push(new_candidate);
+                }
+            }
+
+            fn mark_for_selection(&mut self, opt_type: &OptimizeType, n_selected: usize) {
+                //Maybe always call this and eliminate sorting from main mating function
+                self.sort(opt_type);
+                let start_index = self.len() - n_selected;
+                for i in start_index..self.len() {
+                    self.candidates[i].selected_for_mating = true;
                 }
             }
 
@@ -624,6 +634,11 @@ pub mod impls {
                 // Until the requested number is met
 
                 let selected: &[RCCandidate] = self.get_n_fittest(n_selected, opt_type);
+
+                // println!("Selected");
+                // for c in selected {
+                // c.debug();
+                // }
                 let list_len = selected.len();
                 let mut new_candidate_list: Vec<RCCandidate> = Default::default();
                 let mut count = 0;
@@ -1065,6 +1080,7 @@ pub mod impls {
                 (max_fitness, total_fitness / self.len() as f32)
             }
 
+            fn mark_for_selection(&mut self, opt_type: &OptimizeType, n_selected: usize) {}
             // Updates internal CandidateList
             fn mate(
                 &mut self,
