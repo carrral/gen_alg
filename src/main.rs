@@ -64,7 +64,8 @@ fn multivalued_fn_i_3(mvi: MultivaluedInteger) -> FitnessReturn {
     let y = mvi.vars_value[1] as f32;
     let z = mvi.vars_value[2] as f32;
 
-    x + y + x
+    let f = x + y + z;
+    return f;
 }
 
 fn main() {
@@ -78,36 +79,36 @@ fn main() {
     let bounds = genetic::Bounds::new(lower_bound, upper_bound);
     mvfl.set_bounds(bounds);
 
-    let results = basic_genetic_algorithm(
-        16,
-        4,
-        &mut mvfl,
-        multivalued_fn2,
-        0.6,
-        0.01,
-        &OptimizeType::MAX,
-        &StopCondition::CYCLES(30),
-    );
+    // let results = basic_genetic_algorithm(
+    // 16,
+    // 4,
+    // &mut mvfl,
+    // multivalued_fn2,
+    // 0.6,
+    // 0.01,
+    // &OptimizeType::MAX,
+    // &StopCondition::CYCLES(30),
+    // );
 
-    match results {
-        Ok((v, fit)) => {
-            println!("Resultado: {}, Fitness: {}", v.to_string(), fit);
-        }
-        Err(s) => {
-            println!("Error: {}", s);
-        }
-    }
+    // match results {
+    // Ok((v, fit)) => {
+    // println!("Resultado: {}, Fitness: {}", v.to_string(), fit);
+    // }
+    // Err(s) => {
+    // println!("Error: {}", s);
+    // }
+    // }
 
     let mut mvil = MVICandidateList::new(3);
     let results2 = basic_genetic_algorithm(
-        16,
-        4,
+        100,
+        20,
         &mut mvil,
         multivalued_fn_i_3,
         0.6,
         0.1,
         &OptimizeType::MAX,
-        &StopCondition::CYCLES(2000),
+        &StopCondition::BOUND(765.0, 0.0),
     );
 
     match results2 {

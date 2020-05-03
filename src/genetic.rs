@@ -871,11 +871,6 @@ pub mod impls {
                     substrings[start_index / r] = &s[start_index..start_index + r];
                 }
 
-                assert!(substrings.len() == n_vars);
-                for e in &substrings {
-                    assert!(e.chars().count() == MultivaluedIntCandidate::INT_LEN);
-                }
-
                 return substrings;
             }
 
@@ -889,7 +884,6 @@ pub mod impls {
                     .iter()
                     .map(|x| bin_to_int(&x.to_string()))
                     .collect::<Vec<isize>>();
-                println!("{:?}", values);
 
                 return values;
             }
