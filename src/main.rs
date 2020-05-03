@@ -5,9 +5,10 @@
 pub mod genetic;
 
 use genetic::types::*;
+use genetic::utils::{bin_to_i32, bin_to_int};
 use genetic::{impls, traits, utils, OptimizeType, StopCondition};
 use gnuplot::Figure;
-use impls::multi_valued::RCCList;
+use impls::multi_valued::{MVICandidateList, RCCList};
 use impls::single_valued::IntegerCandidateList;
 use rand::{distributions::WeightedIndex, prelude::*, Rng};
 use traits::CandidateList;
@@ -25,7 +26,7 @@ fn squared(x: isize) -> FitnessReturn {
     isize::pow(x, 2) as f32
 }
 
-fn rosenbrock_banana(mvf: MultivariedFloat) -> FitnessReturn {
+fn rosenbrock_banana(mvf: MultivaluedFloat) -> FitnessReturn {
     if mvf.n_vars != 2 {
         panic!(
             "Ésta función toma 2 parámetros, se recibieron {}",
@@ -39,7 +40,7 @@ fn rosenbrock_banana(mvf: MultivariedFloat) -> FitnessReturn {
     (1f32 - x).powi(2) + 100f32 * (y - x.powi(2)).powi(2)
 }
 
-fn multivalued_fn2(mvf: MultivariedFloat) -> FitnessReturn {
+fn multivalued_fn2(mvf: MultivaluedFloat) -> FitnessReturn {
     if mvf.n_vars != 2 {
         panic!(
             "Ésta función toma 2 parámetros, se recibieron {}",
@@ -52,11 +53,28 @@ fn multivalued_fn2(mvf: MultivariedFloat) -> FitnessReturn {
     -(x - 5.0).powi(2) - (y - 7.0).powi(2) + 5.0
 }
 
+fn multivalued_fn_i_3(mvi: MultivaluedInteger) -> FitnessReturn {
+    if mvi.n_vars != 3 {
+        panic!(
+            "Invalid number of variables: expected 3, got {}",
+            mvi.n_vars
+        );
+    }
+    let x = mvi.vars_value[0] as f32;
+    let y = mvi.vars_value[1] as f32;
+    let z = mvi.vars_value[2] as f32;
+
+    x + y + x
+}
+
 fn main() {
-    let mut l = IntegerCandidateList::default();
+    // println!(
+    // "{}",
+    // bin_to_i32(&"1111111111111111111111111111011".to_string())
+    // );
     let mut mvfl = RCCList::new(2);
-    let lower_bound = MultivariedFloat::new(2, vec![-3.0, -3.0]);
-    let upper_bound = MultivariedFloat::new(2, vec![3.0, 3.0]);
+    let lower_bound = MultivaluedFloat::new(2, vec![-30.0, -30.0]);
+    let upper_bound = MultivaluedFloat::new(2, vec![30.0, 30.0]);
     let bounds = genetic::Bounds::new(lower_bound, upper_bound);
     mvfl.set_bounds(bounds);
 
@@ -64,14 +82,35 @@ fn main() {
         16,
         4,
         &mut mvfl,
-        rosenbrock_banana,
+        multivalued_fn2,
         0.6,
         0.01,
-        &OptimizeType::MIN,
+        &OptimizeType::MAX,
         &StopCondition::CYCLES(30),
     );
 
     match results {
+        Ok((v, fit)) => {
+            println!("Resultado: {}, Fitness: {}", v.to_string(), fit);
+        }
+        Err(s) => {
+            println!("Error: {}", s);
+        }
+    }
+
+    let mut mvil = MVICandidateList::new(3);
+    let results2 = basic_genetic_algorithm(
+        16,
+        4,
+        &mut mvil,
+        multivalued_fn_i_3,
+        0.6,
+        0.1,
+        &OptimizeType::MAX,
+        &StopCondition::CYCLES(2000),
+    );
+
+    match results2 {
         Ok((v, fit)) => {
             println!("Resultado: {}, Fitness: {}", v.to_string(), fit);
         }
@@ -143,6 +182,7 @@ fn basic_genetic_algorithm<T, U>(
             break;
         }
 
+        candidates.mark_for_selection(opt, selected_per_round);
         candidates.debug();
         println!("\n");
 
@@ -195,8 +235,8 @@ fn basic_genetic_algorithm<T, U>(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use genetic::impls::multi_valued::MVFCandidateList;
-    use genetic::impls::multi_valued::MultivariedFloatCandidate;
+    use genetic::impls::multi_valued::MVICandidateList;
+    use genetic::impls::multi_valued::MultivaluedIntCandidate;
     use genetic::impls::single_valued::IntegerCandidate;
     use genetic::impls::single_valued::IntegerCandidateList;
     use genetic::InternalState;
@@ -256,22 +296,6 @@ mod tests {
     }
 
     #[test]
-    fn test_get_f32_values() {
-        let f1 = "01000000000100110011001100110011"; // 2.3
-        let f2 = "11000010111111110101011100001010"; // -127.67
-        let f3 = "01000010000000111110000101001000"; // 32.97
-        let mut v = String::default();
-        v.push_str(f1);
-        v.push_str(f2);
-        v.push_str(f3);
-
-        let mvfc = MultivariedFloatCandidate::new(3, v);
-
-        let vals = mvfc.get_vars_from_bit_string();
-        assert_eq!(vals, vec![2.3, -127.67, 32.97])
-    }
-
-    #[test]
     fn test_pow() {
         let s: f32 = 500.0;
         assert_eq!(s * 10f32.powi(-3), 0.5);
@@ -288,5 +312,12 @@ mod tests {
             utils::parse_f32(&"11000101101010010111101011101101".to_string()),
             -5423.36572265625
         );
+    }
+
+    #[test]
+    fn test_mvic() {
+        let mvic = MultivaluedIntCandidate::new(3, "000000000000000001000000".to_string());
+        let values = mvic.get_vars_from_bit_string();
+        assert_eq!(values, [0, 0, 64]);
     }
 }

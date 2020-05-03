@@ -46,8 +46,8 @@ pub struct Bounds<T> {
     strays: Option<Vec<T>>,
 }
 
-impl Bounds<MultivariedFloat> {
-    pub fn new(lower: MultivariedFloat, upper: MultivariedFloat) -> Self {
+impl Bounds<MultivaluedFloat> {
+    pub fn new(lower: MultivaluedFloat, upper: MultivaluedFloat) -> Self {
         if lower.n_vars != upper.n_vars {
             panic!("Dimmension mismatch , {} != {}", lower.n_vars, upper.n_vars);
         }
@@ -58,7 +58,7 @@ impl Bounds<MultivariedFloat> {
         }
     }
 
-    pub fn in_range(&self, mvf: &MultivariedFloat) -> bool {
+    pub fn in_range(&self, mvf: &MultivaluedFloat) -> bool {
         true
     }
 
@@ -225,6 +225,7 @@ pub mod impls {
             pub ind_size: usize,
             pub candidates: Vec<IntegerCandidate>,
         }
+
         impl IntegerCandidateList {
             pub fn get_n_fittest(
                 &mut self,
@@ -428,21 +429,13 @@ pub mod impls {
     }
     pub mod multi_valued {
         use super::super::traits::{Candidate, CandidateList};
-        use super::super::types::{FitnessReturn, MultivariedFloat};
+        use super::super::types::{FitnessReturn, MultivaluedFloat, MultivaluedInteger};
         use super::super::utils::*;
         use super::super::{Bounds, InternalState, OptimizeType, StopCondition};
 
-        pub struct MultivariedFloatCandidate {
-            pub vars: MultivariedFloat,
-            pub value: String,
-            pub fitness: Option<FitnessReturn>,
-            pub mutated: bool,
-            pub selected: bool,
-        }
-
         #[derive(Clone)]
         pub struct RCCandidate {
-            vars: MultivariedFloat,
+            vars: MultivaluedFloat,
             fitness: Option<FitnessReturn>,
             selected_for_mating: bool,
         }
@@ -450,7 +443,7 @@ pub mod impls {
         impl RCCandidate {
             pub fn new(n_vars: usize, values: &Vec<f32>) -> Self {
                 RCCandidate {
-                    vars: MultivariedFloat {
+                    vars: MultivaluedFloat {
                         n_vars,
                         vars_value: values.clone(),
                     },
@@ -460,10 +453,10 @@ pub mod impls {
             }
         }
 
-        impl Candidate<MultivariedFloat> for RCCandidate {
+        impl Candidate<MultivaluedFloat> for RCCandidate {
             // Evalúa el valor de fitness de self.value, lo asigna en self.fitness
             // y lo regresa.
-            fn eval_fitness(&mut self, f: fn(MultivariedFloat) -> FitnessReturn) -> FitnessReturn {
+            fn eval_fitness(&mut self, f: fn(MultivaluedFloat) -> FitnessReturn) -> FitnessReturn {
                 let fit = f(self.vars.clone());
                 self.fitness = Some(fit);
                 fit
@@ -498,7 +491,7 @@ pub mod impls {
             candidates: Vec<RCCandidate>,
             current_cycle: Option<usize>,
             max_cycles: Option<usize>,
-            bounds: Option<Bounds<MultivariedFloat>>,
+            bounds: Option<Bounds<MultivaluedFloat>>,
 
             ///Number of vars in each vector
             n_vars: usize,
@@ -515,7 +508,7 @@ pub mod impls {
                 }
             }
 
-            pub fn set_bounds(&mut self, bounds: Bounds<MultivariedFloat>) {
+            pub fn set_bounds(&mut self, bounds: Bounds<MultivaluedFloat>) {
                 self.bounds = Some(bounds);
             }
 
@@ -532,7 +525,7 @@ pub mod impls {
 
         /// This implementation of a Single Precision Floating Point GA requires a lower and upper bound for every dimmension.
         /// it also requires the stoping condition to be a hard cycle count.
-        impl<'a> CandidateList<RCCandidate, MultivariedFloat> for RCCList {
+        impl<'a> CandidateList<RCCandidate, MultivaluedFloat> for RCCList {
             // Generates an initial vector of Random Candidates
             fn generate_initial_candidates(&mut self, requested: usize) {
                 // Check if bounded
@@ -791,7 +784,7 @@ pub mod impls {
             }
 
             //Evaluates fitness for the whole candidate list
-            fn eval_fitness(&mut self, f: fn(MultivariedFloat) -> FitnessReturn) {
+            fn eval_fitness(&mut self, f: fn(MultivaluedFloat) -> FitnessReturn) {
                 for c in &mut self.candidates {
                     c.eval_fitness(f);
                 }
@@ -812,10 +805,10 @@ pub mod impls {
             fn get_results(
                 &mut self,
                 opt_type: &OptimizeType,
-            ) -> (MultivariedFloat, FitnessReturn) {
+            ) -> (MultivaluedFloat, FitnessReturn) {
                 self.sort(opt_type);
                 let x = self.candidates.pop().unwrap();
-                let (v, f): (MultivariedFloat, FitnessReturn) = (x.vars, x.fitness.unwrap());
+                let (v, f): (MultivaluedFloat, FitnessReturn) = (x.vars, x.fitness.unwrap());
                 (v, f)
             }
 
@@ -849,8 +842,16 @@ pub mod impls {
             }
         }
 
-        impl<'a> MultivariedFloatCandidate {
-            const FLOAT_LEN: usize = 32;
+        pub struct MultivaluedIntCandidate {
+            pub vars: MultivaluedInteger,
+            pub value: String,
+            pub fitness: Option<FitnessReturn>,
+            pub mutated: bool,
+            pub selected: bool,
+        }
+
+        impl<'a> MultivaluedIntCandidate {
+            const INT_LEN: usize = 8;
 
             pub fn len(&self) -> usize {
                 self.value.chars().count()
@@ -862,27 +863,33 @@ pub mod impls {
                 // Sub divide single candidate string into individual sub strings
                 let mut substrings: Vec<&str> = vec![""; n_vars];
 
-                let r = MultivariedFloatCandidate::FLOAT_LEN;
+                let r = MultivaluedIntCandidate::INT_LEN;
                 let l = s.chars().count();
 
-                // Assumes l == n_vars*FLOAT_LEN
+                // Assumes l == n_vars*INT_LEN
                 for start_index in (0..l).step_by(r) {
                     substrings[start_index / r] = &s[start_index..start_index + r];
+                }
+
+                assert!(substrings.len() == n_vars);
+                for e in &substrings {
+                    assert!(e.chars().count() == MultivaluedIntCandidate::INT_LEN);
                 }
 
                 return substrings;
             }
 
-            /// Returns a vector of the floats containted in self.value (bit string)
-            /// Internal use meant only for updating MultivariedFloat's values, not intended for
+            /// Returns a vector of the ints containted in self.value (bit string)
+            /// Internal use meant only for updating MultivaluedInts's values, not intended for
             /// use by the user.
-            pub fn get_vars_from_bit_string(&self) -> Vec<f32> {
+            pub fn get_vars_from_bit_string(&self) -> Vec<isize> {
                 let substrings =
-                    MultivariedFloatCandidate::get_var_substrings(&self.value, self.vars.n_vars);
+                    MultivaluedIntCandidate::get_var_substrings(&self.value, self.vars.n_vars);
                 let values = substrings
                     .iter()
-                    .map(|x| parse_f32(&x.to_string()))
-                    .collect::<Vec<f32>>();
+                    .map(|x| bin_to_int(&x.to_string()))
+                    .collect::<Vec<isize>>();
+                println!("{:?}", values);
 
                 return values;
             }
@@ -898,21 +905,21 @@ pub mod impls {
 
                 let len = value.chars().count();
 
-                if !(len / MultivariedFloatCandidate::FLOAT_LEN == n_vars
-                    && len % MultivariedFloatCandidate::FLOAT_LEN == 0)
+                if !(len / MultivaluedIntCandidate::INT_LEN == n_vars
+                    && len % MultivaluedIntCandidate::INT_LEN == 0)
                 {
-                    panic!("Length of value String and number of variables is incompatible");
+                    panic!("Length of value String and number of variables is incompatible: expected {}, got {}", MultivaluedIntCandidate::INT_LEN*n_vars, len);
                 }
 
-                let substrings = MultivariedFloatCandidate::get_var_substrings(&value, n_vars);
+                let substrings = MultivaluedIntCandidate::get_var_substrings(&value, n_vars);
 
                 let vars_value = substrings
                     .iter()
-                    .map(|x| parse_f32(&x.to_string()))
-                    .collect::<Vec<f32>>();
+                    .map(|x| bin_to_int(&x.to_string()))
+                    .collect::<Vec<isize>>();
 
-                MultivariedFloatCandidate {
-                    vars: MultivariedFloat { n_vars, vars_value },
+                MultivaluedIntCandidate {
+                    vars: MultivaluedInteger { n_vars, vars_value },
                     value,
                     fitness: None,
                     mutated: false,
@@ -921,12 +928,15 @@ pub mod impls {
             }
         }
 
-        impl<'a> Candidate<MultivariedFloat> for MultivariedFloatCandidate {
+        impl<'a> Candidate<MultivaluedInteger> for MultivaluedIntCandidate {
             // Evalúa el valor de fitness de self.value, lo asigna en self.fitness
             // y lo regresa.
-            fn eval_fitness(&mut self, f: fn(MultivariedFloat) -> FitnessReturn) -> FitnessReturn {
+            fn eval_fitness(
+                &mut self,
+                f: fn(MultivaluedInteger) -> FitnessReturn,
+            ) -> FitnessReturn {
                 //FIXME: Clone?
-                // let v: MultivariedFloat = self.vars.clone();
+                // let v: MultivaluedInteger = self.vars.clone();
                 let f = f(self.vars.clone());
 
                 self.fitness = Some(f);
@@ -939,7 +949,7 @@ pub mod impls {
                     None => String::from("UNDEFINED"),
                 };
                 format!(
-                    "MVFCandidate{{vars:{}, fitness:{}}}",
+                    "MVICandidate{{vars:{}, fitness:{}}}",
                     self.vars.to_string(),
                     fit,
                 )
@@ -952,39 +962,12 @@ pub mod impls {
                 println!("{}", self.to_string());
             }
             fn mutate(&mut self, opt_type: &OptimizeType) {
-                // Mutar en dígitos significativos
-                // 0: sign (0)-> [0.5]
-                // 1-8: exponente (6-8) -> [0.1,1,2]
-                // 9-31: mantissa (9-12) -> [0.5,1,2,4]
-                // Total = 8
-
-                // Seleccionar al azar el valor del vector
-                // sobre el cual actuará.
-
-                let weights = [0.5, 0.1, 1.0, 2.0, 0.5, 1.0, 6.0, 10.0];
-                let rel_start_i = match roulette(&weights) as usize {
-                    0 => 0,
-                    1 => 6,
-                    2 => 7,
-                    3 => 8,
-                    4 => 9,
-                    5 => 10,
-                    6 => 11,
-                    7 => 12,
-                    _ => 12,
-                };
-
-                //Seleccionar la posición de la subcadena (0-12)
-                //Mismo peso para todos
-                let weights = [1.0; 13];
+                let weights = [1.0; 32];
                 let pos = roulette(&weights) as usize;
-
-                let mut new_val = String::default();
-
-                let abs_index = MultivariedFloatCandidate::FLOAT_LEN * rel_start_i + pos;
+                let mut new_val = String::new();
 
                 for (i, c) in self.value.char_indices() {
-                    if i == abs_index {
+                    if i == pos {
                         let new_char = match c {
                             '0' => '1',
                             '1' => '0',
@@ -1003,19 +986,19 @@ pub mod impls {
                 self.vars.update_vals(&new_values);
             }
         }
-        pub struct MVFCandidateList {
+        pub struct MVICandidateList {
             n_vars: usize,
             /// Should be n_vars * 32
             ind_size: usize,
-            candidates: Vec<MultivariedFloatCandidate>,
+            candidates: Vec<MultivaluedIntCandidate>,
         }
 
-        impl MVFCandidateList {
+        impl MVICandidateList {
             pub fn get_n_fittest(
                 &mut self,
                 n: usize,
                 opt_type: &OptimizeType,
-            ) -> &[MultivariedFloatCandidate] {
+            ) -> &[MultivaluedIntCandidate] {
                 self.sort(opt_type);
 
                 let start_i: usize = self.len() - n;
@@ -1024,20 +1007,20 @@ pub mod impls {
             }
 
             pub fn new(n_vars: usize) -> Self {
-                MVFCandidateList {
+                MVICandidateList {
                     n_vars,
-                    ind_size: n_vars * MultivariedFloatCandidate::FLOAT_LEN,
+                    ind_size: n_vars * MultivaluedIntCandidate::INT_LEN,
                     candidates: Default::default(),
                 }
             }
         }
 
-        impl CandidateList<MultivariedFloatCandidate, MultivariedFloat> for MVFCandidateList {
+        impl CandidateList<MultivaluedIntCandidate, MultivaluedInteger> for MVICandidateList {
             // Generates an initial vector of Random Candidates
             fn generate_initial_candidates(&mut self, requested: usize) {
                 for i in 0..requested {
                     let s: String = generate_random_bitstring(self.ind_size);
-                    let c = MultivariedFloatCandidate::new(self.n_vars, s);
+                    let c = MultivaluedIntCandidate::new(self.n_vars, s);
                     self.candidates.push(c);
                 }
             }
@@ -1092,14 +1075,14 @@ pub mod impls {
                 //FIXME: Regresa Result si n_selected > n_out o n_selected > self.len
                 // @prob_rep: Probability of reproduction
                 // @n_out: # of Candidates selected each round for reproduction
-                let mut new_candidates: Vec<MultivariedFloatCandidate> = Default::default();
+                let mut new_candidates: Vec<MultivaluedIntCandidate> = Default::default();
 
                 let size = self.ind_size;
 
                 let n_vars = self.n_vars;
 
                 // Select @n_out best candidates
-                let best_candidates: &[MultivariedFloatCandidate] =
+                let best_candidates: &[MultivaluedIntCandidate] =
                     self.get_n_fittest(n_selected, opt_type);
 
                 // if DEBUG {
@@ -1120,8 +1103,7 @@ pub mod impls {
                 //                  Candidato 3 -> Candidato 2
 
                 let mut offset: usize = 1;
-                let k: usize =
-                    splitting_point(n_vars, prob_rep) * MultivariedFloatCandidate::FLOAT_LEN;
+                let k: usize = splitting_point(n_vars, prob_rep) * MultivaluedIntCandidate::INT_LEN;
 
                 loop {
                     let mut break_loop = false;
@@ -1133,11 +1115,11 @@ pub mod impls {
                             k,
                         );
                         let offspring = (
-                            MultivariedFloatCandidate::new(
+                            MultivaluedIntCandidate::new(
                                 n_vars,
                                 String::from(current_offspring_vals.0),
                             ),
-                            MultivariedFloatCandidate::new(
+                            MultivaluedIntCandidate::new(
                                 n_vars,
                                 String::from(current_offspring_vals.1),
                             ),
@@ -1177,7 +1159,7 @@ pub mod impls {
             }
 
             //Evaluates fitness for the whole candidate list
-            fn eval_fitness(&mut self, f: fn(MultivariedFloat) -> FitnessReturn) {
+            fn eval_fitness(&mut self, f: fn(MultivaluedInteger) -> FitnessReturn) {
                 //FIXME: Agregar un genérico en la definición del trait, diferente a candidate
                 for candidate in &mut self.candidates {
                     candidate.eval_fitness(f);
@@ -1198,10 +1180,10 @@ pub mod impls {
             fn get_results(
                 &mut self,
                 opt_type: &OptimizeType,
-            ) -> (MultivariedFloat, FitnessReturn) {
+            ) -> (MultivaluedInteger, FitnessReturn) {
                 self.sort(opt_type);
                 let x = self.candidates.pop().unwrap();
-                let (v, f): (MultivariedFloat, FitnessReturn) = (x.vars, x.fitness.unwrap());
+                let (v, f): (MultivaluedInteger, FitnessReturn) = (x.vars, x.fitness.unwrap());
                 (v, f)
             }
 
@@ -1269,20 +1251,65 @@ pub mod types {
     pub type FitnessReturn = f32;
 
     #[derive(Clone)]
-    pub struct MultivariedFloat {
-        ///Wrapper struct for (n0,n1,...) type of values, doesn't hold info about
-        ///its candidate representation
+    pub struct MultivaluedInteger {
+        pub n_vars: usize,
+        pub vars_value: Vec<isize>,
+    }
+
+    impl MultivaluedInteger {
+        pub fn new(n_vars: usize, vars_value: Vec<isize>) -> Self {
+            if vars_value.len() != n_vars {
+                panic!("Declared length of vector doesn't match length of supplied values");
+            }
+            MultivaluedInteger { n_vars, vars_value }
+        }
+
+        pub fn to_string(&self) -> String {
+            let mut s = String::new();
+            for i in 0..(self.n_vars - 1) {
+                let mut _s = format!("{}", self.vars_value[i]);
+                _s.push_str(",");
+                s.push_str(&*_s)
+            }
+            s.push_str(&*format!("{}", self.vars_value[self.n_vars - 1]));
+            format!("({})", s)
+        }
+
+        pub fn update_vals(&mut self, values: &Vec<isize>) {
+            //Raises error if values.len() != self.n_vars
+            if values.len() != self.n_vars {
+                panic!(format!(
+                    "Mismatch of variable length: expected {}, got {} ",
+                    self.n_vars,
+                    values.len()
+                ));
+            }
+
+            for i in 0..self.n_vars {
+                self.vars_value[i] = values[i];
+            }
+        }
+
+        pub fn get_vals(&self) -> &Vec<isize> {
+            &self.vars_value
+        }
+    }
+
+    ///Wrapper struct for (n0,n1,...) type of values, doesn't hold info about
+    ///its candidate representation
+    #[derive(Clone)]
+    pub struct MultivaluedFloat {
         //n_vars is always equal to vars_value.len()
         pub n_vars: usize,
         pub vars_value: Vec<f32>,
     }
 
-    impl MultivariedFloat {
+    impl MultivaluedFloat {
         pub fn new(n_vars: usize, vars_value: Vec<f32>) -> Self {
             if vars_value.len() != n_vars {
                 panic!("Declared length of vector doesn't match length of supplied values");
             }
-            MultivariedFloat { n_vars, vars_value }
+            MultivaluedFloat { n_vars, vars_value }
         }
 
         pub fn to_string(&self) -> String {
@@ -1324,6 +1351,10 @@ pub mod utils {
     pub fn bin_to_int(bin: &String) -> isize {
         let r_int: isize = isize::from_str_radix(bin, 2).unwrap();
         r_int
+    }
+
+    pub fn bin_to_i32(bin: &String) -> i32 {
+        i32::from_str_radix(bin, 2).unwrap()
     }
 
     pub fn get_alpha() -> f32 {
