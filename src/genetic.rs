@@ -117,7 +117,7 @@ pub mod traits {
 
         fn len(&self) -> usize;
 
-        fn debug(&self);
+        fn debug(&self, value: bool);
 
         // Regresa el mejor resultado encontrado en una generación
         fn get_results(&mut self, opt_type: &OptimizeType) -> (U, FitnessReturn);
@@ -382,9 +382,11 @@ pub mod impls {
                 }
             }
 
-            fn debug(&self) {
-                for candidate in &self.candidates {
-                    candidate.debug();
+            fn debug(&self, debug_value: bool) {
+                if debug_value {
+                    for candidate in &self.candidates {
+                        candidate.debug();
+                    }
                 }
             }
 
@@ -794,9 +796,11 @@ pub mod impls {
                 self.candidates.len()
             }
 
-            fn debug(&self) {
-                for c in &self.candidates {
-                    c.debug();
+            fn debug(&self, debug_value: bool) {
+                if debug_value {
+                    for c in &self.candidates {
+                        c.debug();
+                    }
                 }
             }
 
@@ -1164,9 +1168,11 @@ pub mod impls {
                 return self.candidates.len();
             }
 
-            fn debug(&self) {
-                for c in &self.candidates {
-                    c.debug();
+            fn debug(&self, debug_value: bool) {
+                if debug_value {
+                    for c in &self.candidates {
+                        c.debug();
+                    }
                 }
             }
 
@@ -1466,7 +1472,7 @@ pub mod utils {
         return mutated;
     }
 
-    pub fn debug_msg(msg: &str) {
+    pub fn debug_msg(msg: String) {
         println!("  => {} ", msg);
     }
 

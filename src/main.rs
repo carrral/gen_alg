@@ -5,11 +5,9 @@
 pub mod genetic;
 
 use genetic::types::*;
-use genetic::utils::{bin_to_i32, bin_to_int};
 use genetic::{impls, traits, utils, OptimizeType, StopCondition};
-use gnuplot::Figure;
+use gnuplot::{Caption, Color, Figure};
 use impls::multi_valued::{MVICandidateList, RCCList};
-use impls::single_valued::IntegerCandidateList;
 use rand::{distributions::WeightedIndex, prelude::*, Rng};
 use traits::CandidateList;
 
@@ -69,49 +67,26 @@ fn multivalued_fn_i_3(mvi: MultivaluedInteger) -> FitnessReturn {
 }
 
 fn main() {
-    // println!(
-    // "{}",
-    // bin_to_i32(&"1111111111111111111111111111011".to_string())
-    // );
     let mut mvfl = RCCList::new(2);
     let lower_bound = MultivaluedFloat::new(2, vec![-30.0, -30.0]);
     let upper_bound = MultivaluedFloat::new(2, vec![30.0, 30.0]);
     let bounds = genetic::Bounds::new(lower_bound, upper_bound);
     mvfl.set_bounds(bounds);
 
-    // let results = basic_genetic_algorithm(
-    // 16,
-    // 4,
-    // &mut mvfl,
-    // multivalued_fn2,
-    // 0.6,
-    // 0.01,
-    // &OptimizeType::MAX,
-    // &StopCondition::CYCLES(30),
-    // );
-
-    // match results {
-    // Ok((v, fit)) => {
-    // println!("Resultado: {}, Fitness: {}", v.to_string(), fit);
-    // }
-    // Err(s) => {
-    // println!("Error: {}", s);
-    // }
-    // }
-
-    let mut mvil = MVICandidateList::new(3);
-    let results2 = basic_genetic_algorithm(
-        100,
-        20,
-        &mut mvil,
-        multivalued_fn_i_3,
+    let results = basic_genetic_algorithm(
+        16,
+        4,
+        &mut mvfl,
+        multivalued_fn2,
         0.6,
-        0.1,
+        0.01,
         &OptimizeType::MAX,
-        &StopCondition::BOUND(765.0, 0.0),
+        &StopCondition::CYCLES(100),
+        true,
+        false,
     );
 
-    match results2 {
+    match results {
         Ok((v, fit)) => {
             println!("Resultado: {}, Fitness: {}", v.to_string(), fit);
         }
@@ -119,6 +94,29 @@ fn main() {
             println!("Error: {}", s);
         }
     }
+
+    // let mut mvil = MVICandidateList::new(3);
+    // let results2 = basic_genetic_algorithm(
+    // 100,
+    // 20,
+    // &mut mvil,
+    // multivalued_fn_i_3,
+    // 0.6,
+    // 0.1,
+    // &OptimizeType::MIN,
+    // &StopCondition::BOUND(0.0, 0.0),
+    // true,
+    // true,
+    // );
+
+    // match results2 {
+    // Ok((v, fit)) => {
+    // println!("Resultado: {}, Fitness: {}", v.to_string(), fit);
+    // }
+    // Err(s) => {
+    // println!("Error: {}", s);
+    // }
+    // }
 }
 
 // TODO: store historical best values, return fittest
@@ -131,6 +129,8 @@ fn basic_genetic_algorithm<T, U>(
     mut_pr: f32,
     opt: &OptimizeType, // MAX/MIN
     stop_cond: &StopCondition,
+    debug_value: bool,
+    show_fitness_plot: bool,
 ) -> Result<(U, FitnessReturn), String> {
     // @fitness: Fitness function
     // @opt: OptimizeType::MIN/OptimizeType::MAX
@@ -148,10 +148,10 @@ fn basic_genetic_algorithm<T, U>(
     let mut avg_fitness_over_time_y: Vec<FitnessReturn> = Default::default();
     let mut internal_state: genetic::InternalState = Default::default();
 
-    utils::debug_msg(&*format!("Tamaño de la población: {}", n));
-    utils::debug_msg(&*format!("Optimización: {}", &*opt.to_string()));
-    utils::debug_msg(&*format!("Probabilidad de reproducción: {}", mating_pr));
-    utils::debug_msg(&*format!("Probabilidad de mutación: {}", mut_pr));
+    utils::debug_msg(format!("Tamaño de la población: {}", n));
+    utils::debug_msg(format!("Optimización: {}", &*opt.to_string()));
+    utils::debug_msg(format!("Probabilidad de reproducción: {}", mating_pr));
+    utils::debug_msg(format!("Probabilidad de mutación: {}", mut_pr));
 
     candidates.track_stop_cond(&stop_cond)?;
 
@@ -160,10 +160,10 @@ fn basic_genetic_algorithm<T, U>(
     candidates.eval_fitness(fitness_fn);
 
     let tup = candidates.get_diagnostics(opt);
-    // fitness_over_time_y.push(tup.0);
-    // avg_fitness_over_time_y.push(tup.1);
-    // fitness_over_time_x.push(0);
-    // avg_fitness_over_time_x.push(0);
+    fitness_over_time_y.push(tup.0);
+    avg_fitness_over_time_y.push(tup.1);
+    fitness_over_time_x.push(0);
+    avg_fitness_over_time_x.push(0);
     let max_fitness;
     match candidates.get_results(opt) {
         (val, fitness) => {
@@ -175,16 +175,16 @@ fn basic_genetic_algorithm<T, U>(
     internal_state.update_values(max_fitness);
 
     loop {
-        utils::debug_msg(&*format!("Generación {}:", internal_state.cycles));
+        utils::debug_msg(format!("Generación {}:", internal_state.cycles));
 
         if internal_state.satisfies(stop_cond) {
-            candidates.debug();
-            utils::debug_msg("FIN\n\n");
+            candidates.debug(debug_value);
+            utils::debug_msg(String::from("FIN\n\n"));
             break;
         }
 
         candidates.mark_for_selection(opt, selected_per_round);
-        candidates.debug();
+        candidates.debug(debug_value);
         println!("\n");
 
         candidates.track_internal_state(&internal_state);
@@ -198,10 +198,10 @@ fn basic_genetic_algorithm<T, U>(
         let tup = candidates.get_diagnostics(opt);
         let current_gen = internal_state.cycles;
 
-        // fitness_over_time_y.push(tup.0);
-        // avg_fitness_over_time_y.push(tup.1);
-        // fitness_over_time_x.push(current_gen);
-        // avg_fitness_over_time_x.push(current_gen);
+        fitness_over_time_y.push(tup.0);
+        avg_fitness_over_time_y.push(tup.1);
+        fitness_over_time_x.push(current_gen);
+        avg_fitness_over_time_x.push(current_gen);
 
         // Update internal state
         let max_fitness;
@@ -215,20 +215,20 @@ fn basic_genetic_algorithm<T, U>(
         internal_state.update_values(max_fitness);
     }
 
-    // fitness_over_time.axes2d().lines(
-    // &fitness_over_time_x,
-    // &fitness_over_time_y,
-    // &[Caption("Fitness / Tiempo"), Color("black")],
-    // );
+    fitness_over_time.axes2d().lines(
+        &fitness_over_time_x,
+        &fitness_over_time_y,
+        &[Caption("Fitness / Tiempo"), Color("black")],
+    );
 
-    // avg_fitness_over_time.axes2d().lines(
-    // &avg_fitness_over_time_x,
-    // &avg_fitness_over_time_y,
-    // &[Caption("Fitness promedio / Tiempo"), Color("red")],
-    // );
+    avg_fitness_over_time.axes2d().lines(
+        &avg_fitness_over_time_x,
+        &avg_fitness_over_time_y,
+        &[Caption("Fitness promedio / Tiempo"), Color("red")],
+    );
 
-    // let f = fitness_over_time.show();
-    // let g = avg_fitness_over_time.show();
+    let f = fitness_over_time.show();
+    let g = avg_fitness_over_time.show();
 
     return results;
 }
