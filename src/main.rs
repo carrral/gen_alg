@@ -6,9 +6,9 @@ pub mod genetic;
 
 use genetic::types::*;
 use genetic::utils::debug_msg;
-use genetic::{impls, traits, utils, OptimizeType, StopCondition};
+use genetic::{impls, traits, OptimizeType, StopCondition};
 use gnuplot::{Caption, Color, Figure};
-use impls::multi_valued::{MVICandidateList, RCCList};
+use impls::multi_valued::RCCList;
 use rand::{distributions::WeightedIndex, prelude::*, Rng};
 use traits::CandidateList;
 
@@ -97,7 +97,6 @@ fn main() {
     }
 }
 
-// TODO: store historical best values, return fittest
 fn basic_genetic_algorithm<T, U: Clone>(
     n: usize, // Tamaño de la población inicial
     selected_per_round: usize,
@@ -196,6 +195,7 @@ fn basic_genetic_algorithm<T, U: Clone>(
         };
 
         if historic_max_fitness < max_fitness {
+            historic_max_fitness = max_fitness;
             historic_best = results.clone();
         }
 

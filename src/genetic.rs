@@ -84,7 +84,7 @@ impl Bounds<MultivaluedFloat> {
 pub mod traits {
 
     use super::types::*;
-    use super::{Bounds, InternalState, OptimizeType, StopCondition};
+    use super::{InternalState, OptimizeType, StopCondition};
 
     pub trait Candidate<T> {
         // Evalúa el valor de fitness de self.value, lo asigna en self.fitness
@@ -146,8 +146,7 @@ pub mod impls {
         use super::super::traits::*;
         use super::super::types::FitnessReturn;
         use super::super::utils::{
-            cross_strings, generate_random_bitstring, generic_mutate, parse_f32, roulette,
-            splitting_point,
+            cross_strings, generate_random_bitstring, generic_mutate, roulette, splitting_point,
         };
         use super::super::{InternalState, OptimizeType, StopCondition};
         #[derive(Clone)]
