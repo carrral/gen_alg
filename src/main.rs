@@ -98,7 +98,7 @@ fn main() {
 }
 
 // TODO: store historical best values, return fittest
-fn basic_genetic_algorithm<T, U>(
+fn basic_genetic_algorithm<T, U: Clone>(
     n: usize, // Tamaño de la población inicial
     selected_per_round: usize,
     candidates: &mut impl CandidateList<T, U>,
@@ -116,6 +116,8 @@ fn basic_genetic_algorithm<T, U>(
     // No sabe de una respuesta correcta, solo continúa hasta que stop_cond se cumple
 
     let mut results = Err("No calculations done".to_string());
+    let mut historic_best = Err("No calculations done".to_string());
+    let mut historic_max_fitness;
     let mut fitness_over_time = Figure::new();
     let mut avg_fitness_over_time = Figure::new();
 
@@ -131,6 +133,7 @@ fn basic_genetic_algorithm<T, U>(
     debug_msg(format!("Probabilidad de reproducción: {}", mating_pr));
     debug_msg(format!("Probabilidad de mutación: {}", mut_pr));
 
+    // Exits execution if stop condition doesn't match the candidate list requirements
     candidates.track_stop_cond(&stop_cond)?;
 
     // Generate initial round of candidates
@@ -145,7 +148,9 @@ fn basic_genetic_algorithm<T, U>(
     let max_fitness;
     match candidates.get_results(opt) {
         (val, fitness) => {
-            results = Ok((val, fitness));
+            results = Ok((val.clone(), fitness));
+            historic_max_fitness = fitness;
+            historic_best = Ok((val, fitness));
             max_fitness = fitness;
         }
     };
@@ -185,10 +190,14 @@ fn basic_genetic_algorithm<T, U>(
         let max_fitness;
         match candidates.get_results(opt) {
             (val, fitness) => {
-                results = Ok((val, fitness));
+                results = Ok((val.clone(), fitness));
                 max_fitness = fitness;
             }
         };
+
+        if historic_max_fitness < max_fitness {
+            historic_best = results.clone();
+        }
 
         internal_state.update_values(max_fitness);
     }
@@ -221,7 +230,7 @@ fn basic_genetic_algorithm<T, U>(
         };
     }
 
-    return results;
+    return historic_best;
 }
 
 #[cfg(test)]
