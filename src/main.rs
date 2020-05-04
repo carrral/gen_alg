@@ -1,10 +1,11 @@
-// #![allow(dead_code)]
+#![allow(dead_code)]
 #![allow(non_camel_case_types)]
-// #![allow(unused_variables)]
+#![allow(unused_variables)]
 
 pub mod genetic;
 
 use genetic::types::*;
+use genetic::utils::debug_msg;
 use genetic::{impls, traits, utils, OptimizeType, StopCondition};
 use gnuplot::{Caption, Color, Figure};
 use impls::multi_valued::{MVICandidateList, RCCList};
@@ -83,7 +84,7 @@ fn main() {
         &OptimizeType::MAX,
         &StopCondition::CYCLES(100),
         true,
-        false,
+        true,
     );
 
     match results {
@@ -94,29 +95,6 @@ fn main() {
             println!("Error: {}", s);
         }
     }
-
-    // let mut mvil = MVICandidateList::new(3);
-    // let results2 = basic_genetic_algorithm(
-    // 100,
-    // 20,
-    // &mut mvil,
-    // multivalued_fn_i_3,
-    // 0.6,
-    // 0.1,
-    // &OptimizeType::MIN,
-    // &StopCondition::BOUND(0.0, 0.0),
-    // true,
-    // true,
-    // );
-
-    // match results2 {
-    // Ok((v, fit)) => {
-    // println!("Resultado: {}, Fitness: {}", v.to_string(), fit);
-    // }
-    // Err(s) => {
-    // println!("Error: {}", s);
-    // }
-    // }
 }
 
 // TODO: store historical best values, return fittest
@@ -148,10 +126,10 @@ fn basic_genetic_algorithm<T, U>(
     let mut avg_fitness_over_time_y: Vec<FitnessReturn> = Default::default();
     let mut internal_state: genetic::InternalState = Default::default();
 
-    utils::debug_msg(format!("Tamaño de la población: {}", n));
-    utils::debug_msg(format!("Optimización: {}", &*opt.to_string()));
-    utils::debug_msg(format!("Probabilidad de reproducción: {}", mating_pr));
-    utils::debug_msg(format!("Probabilidad de mutación: {}", mut_pr));
+    debug_msg(format!("Tamaño de la población: {}", n));
+    debug_msg(format!("Optimización: {}", &*opt.to_string()));
+    debug_msg(format!("Probabilidad de reproducción: {}", mating_pr));
+    debug_msg(format!("Probabilidad de mutación: {}", mut_pr));
 
     candidates.track_stop_cond(&stop_cond)?;
 
@@ -175,11 +153,11 @@ fn basic_genetic_algorithm<T, U>(
     internal_state.update_values(max_fitness);
 
     loop {
-        utils::debug_msg(format!("Generación {}:", internal_state.cycles));
+        debug_msg(format!("Generación {}:", internal_state.cycles));
 
         if internal_state.satisfies(stop_cond) {
             candidates.debug(debug_value);
-            utils::debug_msg(String::from("FIN\n\n"));
+            debug_msg(String::from("FIN\n\n"));
             break;
         }
 
@@ -215,20 +193,33 @@ fn basic_genetic_algorithm<T, U>(
         internal_state.update_values(max_fitness);
     }
 
-    fitness_over_time.axes2d().lines(
-        &fitness_over_time_x,
-        &fitness_over_time_y,
-        &[Caption("Fitness / Tiempo"), Color("black")],
-    );
+    if show_fitness_plot {
+        fitness_over_time.axes2d().lines(
+            &fitness_over_time_x,
+            &fitness_over_time_y,
+            &[Caption("Fitness / Tiempo"), Color("black")],
+        );
 
-    avg_fitness_over_time.axes2d().lines(
-        &avg_fitness_over_time_x,
-        &avg_fitness_over_time_y,
-        &[Caption("Fitness promedio / Tiempo"), Color("red")],
-    );
+        avg_fitness_over_time.axes2d().lines(
+            &avg_fitness_over_time_x,
+            &avg_fitness_over_time_y,
+            &[Caption("Fitness promedio / Tiempo"), Color("red")],
+        );
 
-    let f = fitness_over_time.show();
-    let g = avg_fitness_over_time.show();
+        let f = fitness_over_time.show();
+        match f {
+            Ok(fig) => debug_msg(String::from("Éxito mostrando la gráfica de fitness")),
+            Err(m) => debug_msg(String::from("Error al iniciar GNUPlot")),
+        };
+        let g = avg_fitness_over_time.show();
+
+        match g {
+            Ok(fig) => debug_msg(String::from(
+                "Éxito mostrando la gráfica de fitness promedio",
+            )),
+            Err(m) => debug_msg(String::from("Error al iniciar GNUPlot")),
+        };
+    }
 
     return results;
 }
