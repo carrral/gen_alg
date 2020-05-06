@@ -8,7 +8,7 @@ use genetic::types::*;
 use genetic::utils::debug_msg;
 use genetic::{impls, traits, OptimizeType, StopCondition};
 use gnuplot::{Caption, Color, Figure};
-use impls::multi_valued::RCCList;
+use impls::multi_valued::{MVICandidateList, RCCList};
 use rand::{distributions::WeightedIndex, prelude::*, Rng};
 use traits::CandidateList;
 
@@ -74,20 +74,43 @@ fn main() {
     let bounds = genetic::Bounds::new(lower_bound, upper_bound);
     mvfl.set_bounds(bounds);
 
-    let results = basic_genetic_algorithm(
-        16,
-        4,
-        &mut mvfl,
-        multivalued_fn2,
+    // let results = basic_genetic_algorithm(
+    // 16,
+    // 4,
+    // &mut mvfl,
+    // multivalued_fn2,
+    // 0.6,
+    // 0.01,
+    // &OptimizeType::MAX,
+    // &StopCondition::CYCLES(100),
+    // false,
+    // false,
+    // );
+
+    // match results {
+    // Ok((v, fit)) => {
+    // println!("Resultado: {}, Fitness: {}", v.to_string(), fit);
+    // }
+    // Err(s) => {
+    // println!("Error: {}", s);
+    // }
+    // }
+
+    let mut mvil = MVICandidateList::new(3);
+    let results2 = basic_genetic_algorithm(
+        100,
+        20,
+        &mut mvil,
+        multivalued_fn_i_3,
         0.6,
         0.01,
         &OptimizeType::MAX,
-        &StopCondition::CYCLES(100),
-        true,
-        true,
+        &StopCondition::CYCLES(10000),
+        false,
+        false,
     );
 
-    match results {
+    match results2 {
         Ok((v, fit)) => {
             println!("Resultado: {}, Fitness: {}", v.to_string(), fit);
         }
@@ -127,10 +150,13 @@ fn basic_genetic_algorithm<T, U: Clone>(
     let mut avg_fitness_over_time_y: Vec<FitnessReturn> = Default::default();
     let mut internal_state: genetic::InternalState = Default::default();
 
-    debug_msg(format!("Tamaño de la población: {}", n));
-    debug_msg(format!("Optimización: {}", &*opt.to_string()));
-    debug_msg(format!("Probabilidad de reproducción: {}", mating_pr));
-    debug_msg(format!("Probabilidad de mutación: {}", mut_pr));
+    debug_msg(format!("Tamaño de la población: {}", n), debug_value);
+    debug_msg(format!("Optimización: {}", &*opt.to_string()), debug_value);
+    debug_msg(
+        format!("Probabilidad de reproducción: {}", mating_pr),
+        debug_value,
+    );
+    debug_msg(format!("Probabilidad de mutación: {}", mut_pr), debug_value);
 
     // Exits execution if stop condition doesn't match the candidate list requirements
     candidates.track_stop_cond(&stop_cond)?;
@@ -157,17 +183,23 @@ fn basic_genetic_algorithm<T, U: Clone>(
     internal_state.update_values(max_fitness);
 
     loop {
-        debug_msg(format!("Generación {}:", internal_state.cycles));
+        debug_msg(
+            format!("Generación {}:", internal_state.cycles),
+            debug_value,
+        );
 
         if internal_state.satisfies(stop_cond) {
             candidates.debug(debug_value);
-            debug_msg(String::from("FIN\n\n"));
+            debug_msg(String::from("FIN\n\n"), debug_value);
             break;
         }
 
         candidates.mark_for_selection(opt, selected_per_round);
         candidates.debug(debug_value);
-        println!("\n");
+
+        if debug_value {
+            println!("\n");
+        }
 
         candidates.track_internal_state(&internal_state);
 
@@ -217,16 +249,20 @@ fn basic_genetic_algorithm<T, U: Clone>(
 
         let f = fitness_over_time.show();
         match f {
-            Ok(fig) => debug_msg(String::from("Éxito mostrando la gráfica de fitness")),
-            Err(m) => debug_msg(String::from("Error al iniciar GNUPlot")),
+            Ok(fig) => debug_msg(
+                String::from("Éxito mostrando la gráfica de fitness"),
+                debug_value,
+            ),
+            Err(m) => debug_msg(String::from("Error al iniciar GNUPlot"), debug_value),
         };
         let g = avg_fitness_over_time.show();
 
         match g {
-            Ok(fig) => debug_msg(String::from(
-                "Éxito mostrando la gráfica de fitness promedio",
-            )),
-            Err(m) => debug_msg(String::from("Error al iniciar GNUPlot")),
+            Ok(fig) => debug_msg(
+                String::from("Éxito mostrando la gráfica de fitness promedio"),
+                debug_value,
+            ),
+            Err(m) => debug_msg(String::from("Error al iniciar GNUPlot"), debug_value),
         };
     }
 
@@ -240,6 +276,7 @@ mod tests {
     use genetic::impls::multi_valued::MultivaluedIntCandidate;
     use genetic::impls::single_valued::IntegerCandidate;
     use genetic::impls::single_valued::IntegerCandidateList;
+    use genetic::utils;
     use genetic::InternalState;
 
     fn setup() -> IntegerCandidateList {
@@ -320,5 +357,21 @@ mod tests {
         let mvic = MultivaluedIntCandidate::new(3, "000000000000000001000000".to_string());
         let values = mvic.get_vars_from_bit_string();
         assert_eq!(values, [0, 0, 64]);
+    }
+
+    #[test]
+    fn test_parse_signed_int() {
+        assert_eq!(
+            utils::bin_to_int(&String::from("11111111111111111111111111110101")),
+            -11
+        );
+        assert_eq!(
+            utils::bin_to_int(&String::from("11111111111111111111111110000001")),
+            -127
+        );
+        assert_eq!(
+            utils::bin_to_int(&String::from("00000000000000000000111110100000")),
+            4000
+        );
     }
 }

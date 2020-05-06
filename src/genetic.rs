@@ -854,7 +854,7 @@ pub mod impls {
         }
 
         impl<'a> MultivaluedIntCandidate {
-            const INT_LEN: usize = 8;
+            const INT_LEN: usize = 32;
 
             pub fn len(&self) -> usize {
                 self.value.chars().count()
@@ -1347,9 +1347,41 @@ pub mod utils {
 
     use super::*;
 
+    /// Two's complement repr. of signed integer representation
     pub fn bin_to_int(bin: &String) -> isize {
-        let r_int: isize = isize::from_str_radix(bin, 2).unwrap();
-        r_int
+        // TODO: Should return Result
+
+        let mut bin_array = bin.chars();
+        let mut negated = String::new();
+
+        for e in bin.chars() {
+            if e != '0' && e != '1' {
+                panic!("Invalid element in bit string: {}", e);
+            }
+        }
+
+        let negative = match bin_array.nth(0).unwrap() {
+            '1' => true,
+            _ => false,
+        };
+
+        if negative {
+            // Negate string
+            bin_array.for_each(|c| {
+                let pushed = match c {
+                    '1' => '0',
+                    '0' => '1',
+                    _ => ' ',
+                };
+                negated.push(pushed);
+            });
+        }
+
+        if negative {
+            return (-1) * isize::from_str_radix(&negated, 2).unwrap() - 1;
+        } else {
+            return isize::from_str_radix(bin, 2).unwrap();
+        }
     }
 
     pub fn bin_to_i32(bin: &String) -> i32 {
@@ -1471,8 +1503,10 @@ pub mod utils {
         return mutated;
     }
 
-    pub fn debug_msg(msg: String) {
-        println!("  => {} ", msg);
+    pub fn debug_msg(msg: String, debug: bool) {
+        if debug {
+            println!("  => {} ", msg);
+        }
     }
 
     pub fn random_range(start: isize, finish: isize) -> isize {
