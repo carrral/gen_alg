@@ -246,7 +246,7 @@ pub mod impls {
 
             // Generates an initial vector of Random Candidates and stores it in self
             fn generate_initial_candidates(&mut self, requested: usize) {
-                for _ in 0..requested {
+                for _ in 0..=requested {
                     let s: String = generate_random_bitstring(self.ind_size);
                     let c = IntegerCandidate::new(s);
                     self.candidates.push(c);
@@ -535,7 +535,7 @@ pub mod impls {
                     Some(_b) => true,
                     None => false,
                 };
-                for _i in 0..requested {
+                for _i in 0..=requested {
                     let mut values: Vec<f32> = Vec::with_capacity(self.n_vars);
                     for j in 0..self.n_vars {
                         let val: f32;
@@ -1015,7 +1015,7 @@ pub mod impls {
         impl CandidateList<MultivaluedIntCandidate, MultivaluedInteger> for MVICandidateList {
             // Generates an initial vector of Random Candidates
             fn generate_initial_candidates(&mut self, requested: usize) {
-                for i in 0..requested {
+                for i in 0..=requested {
                     let s: String = generate_random_bitstring(self.ind_size);
                     let c = MultivaluedIntCandidate::new(self.n_vars, s);
                     self.candidates.push(c);
