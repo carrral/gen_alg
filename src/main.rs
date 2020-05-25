@@ -3,68 +3,14 @@
 #![allow(unused_variables)]
 
 pub mod genetic;
-pub mod test_dir;
+pub mod test_functions;
 
 use genetic::algorithms::genetic_optimize;
-use genetic::types::*;
+use genetic::types::{FitnessReturn, MultivaluedFloat, MultivaluedInteger};
 use genetic::{implementations, OptimizeType, StopCondition};
 use implementations::multi_valued::{MVICandidateList, RCCList};
 use rand::{distributions::WeightedIndex, prelude::*, Rng};
-
-trait ShowGraph {
-    fn show_graph(
-        x_axis: &[usize],
-        y_axis: &[FitnessReturn],
-        title: &str,
-        color: &str,
-    ) -> Result<bool, std::io::Error>;
-}
-
-fn squared(x: isize) -> FitnessReturn {
-    isize::pow(x, 2) as f32
-}
-
-fn rosenbrock_banana(mvf: MultivaluedFloat) -> FitnessReturn {
-    if mvf.n_vars != 2 {
-        panic!(
-            "Ésta función toma 2 parámetros, se recibieron {}",
-            mvf.n_vars
-        );
-    }
-
-    let x: f32 = mvf.vars_value[0];
-    let y: f32 = mvf.vars_value[1];
-
-    (1f32 - x).powi(2) + 100f32 * (y - x.powi(2)).powi(2)
-}
-
-fn multivalued_fn2(mvf: MultivaluedFloat) -> FitnessReturn {
-    if mvf.n_vars != 2 {
-        panic!(
-            "Ésta función toma 2 parámetros, se recibieron {}",
-            mvf.n_vars
-        );
-    }
-
-    let x: f32 = mvf.vars_value[0];
-    let y: f32 = mvf.vars_value[1];
-    -(x - 5.0).powi(2) - (y - 7.0).powi(2) + 5.0
-}
-
-fn multivalued_fn_i_3(mvi: MultivaluedInteger) -> FitnessReturn {
-    if mvi.n_vars != 3 {
-        panic!(
-            "Invalid number of variables: expected 3, got {}",
-            mvi.n_vars
-        );
-    }
-    let x = mvi.vars_value[0] as f32;
-    let y = mvi.vars_value[1] as f32;
-    let z = mvi.vars_value[2] as f32;
-
-    let f = x + y + z;
-    return f;
-}
+use test_functions::*;
 
 fn main() {
     let mut mvfl = RCCList::new(2);
@@ -73,27 +19,27 @@ fn main() {
     let bounds = genetic::Bounds::new(lower_bound, upper_bound);
     mvfl.set_bounds(bounds);
 
-    // let results = genetic_optimize(
-    // 16,
-    // 4,
-    // &mut mvfl,
-    // multivalued_fn2,
-    // 0.6,
-    // 0.01,
-    // &OptimizeType::MAX,
-    // &StopCondition::CYCLES(100),
-    // false,
-    // false,
-    // );
+    let results = genetic_optimize(
+        16,
+        4,
+        &mut mvfl,
+        multivalued_fn2,
+        0.6,
+        0.01,
+        &OptimizeType::MAX,
+        &StopCondition::CYCLES(100),
+        false,
+        false,
+    );
 
-    // match results {
-    // Ok((v, fit)) => {
-    // println!("Resultado: {}, Fitness: {}", v.to_string(), fit);
-    // }
-    // Err(s) => {
-    // println!("Error: {}", s);
-    // }
-    // }
+    match results {
+        Ok((v, fit)) => {
+            println!("Resultado: {}, Fitness: {}", v.to_string(), fit);
+        }
+        Err(s) => {
+            println!("Error: {}", s);
+        }
+    }
 
     let mut mvil = MVICandidateList::new(3);
     let results2 = genetic_optimize(
@@ -122,10 +68,10 @@ fn main() {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use genetic::impls::multi_valued::MVICandidateList;
-    use genetic::impls::multi_valued::MultivaluedIntCandidate;
-    use genetic::impls::single_valued::IntegerCandidate;
-    use genetic::impls::single_valued::IntegerCandidateList;
+    use genetic::implementations::multi_valued::MVICandidateList;
+    use genetic::implementations::multi_valued::MultivaluedIntCandidate;
+    use genetic::implementations::single_valued::IntegerCandidate;
+    use genetic::implementations::single_valued::IntegerCandidateList;
     use genetic::utils;
     use genetic::InternalState;
 
@@ -140,7 +86,7 @@ mod tests {
     }
 
     #[test]
-    fn test_impls() {
+    fn test_implementations() {
         let c = IntegerCandidate::new(String::from("0010"));
         assert_eq!(c.get_integer_representation(), 2);
     }
