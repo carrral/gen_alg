@@ -7,60 +7,101 @@ pub mod test_functions;
 
 use genetic::algorithms::genetic_optimize;
 use genetic::types::{FitnessReturn, MultivaluedFloat, MultivaluedInteger};
+use genetic::Bounds;
 use genetic::{implementations, OptimizeType, StopCondition};
 use implementations::multi_valued::{MVICandidateList, RCCList};
 use rand::{distributions::WeightedIndex, prelude::*, Rng};
-use test_functions::*;
+
+fn f1(mvf: MultivaluedFloat) -> FitnessReturn {
+    let x1: f32 = mvf.vars_value[0];
+    let x2: f32 = mvf.vars_value[1];
+    let x3: f32 = mvf.vars_value[2];
+
+    return x1.powi(2) + x2.powi(2) + x3.powi(2);
+}
+
+fn f2(mvf: MultivaluedFloat) -> FitnessReturn {
+    let x1: f32 = mvf.vars_value[0];
+    let x2: f32 = mvf.vars_value[1];
+    return 100.0 * (x2 - x1.powi(2)).powi(2) + (1.0 - x1.powi(2));
+}
+
+fn f6(mvf: MultivaluedFloat) -> FitnessReturn {
+    let x1: f32 = mvf.vars_value[0];
+    let x2: f32 = mvf.vars_value[1];
+
+    let sum_of_squares: f32 = x1.powi(2) + x2.powi(2);
+    let sqrt = sum_of_squares.sqrt();
+    let sin = sqrt.sin();
+
+    let upper = sin.powi(2) - 0.5;
+    let lower = (1.0 + 0.001 * sum_of_squares).powi(2);
+
+    return 0.5 + upper / lower;
+}
 
 fn main() {
-    let mut mvfl = RCCList::new(2);
-    let lower_bound = MultivaluedFloat::new(2, vec![-30.0, -30.0]);
-    let upper_bound = MultivaluedFloat::new(2, vec![30.0, 30.0]);
-    let bounds = genetic::Bounds::new(lower_bound, upper_bound);
-    mvfl.set_bounds(bounds);
+    let functions = [f1, f2, f6];
+    let n_vars = [3, 2, 2];
+    let tags = ["Función 1", "Función 2", "Función 6"];
 
-    let results = genetic_optimize(
-        16,
-        4,
-        &mut mvfl,
-        multivalued_fn2,
-        0.6,
-        0.01,
-        &OptimizeType::MAX,
-        &StopCondition::CYCLES(100),
-        false,
-        false,
+    let mut multivaried_fn1 = RCCList::new(3);
+    let mut multivaried_fn2 = RCCList::new(2);
+    let mut multivaried_fn6 = RCCList::new(2);
+
+    let bounds_fn1 = Bounds::new(
+        MultivaluedFloat::new(3, vec![-5.12, -5.12, -5.12]),
+        MultivaluedFloat::new(3, vec![5.12, 5.12, 5.12]),
     );
 
-    match results {
-        Ok((v, fit)) => {
-            println!("Resultado: {}, Fitness: {}", v.to_string(), fit);
-        }
-        Err(s) => {
-            println!("Error: {}", s);
-        }
-    }
-
-    let mut mvil = MVICandidateList::new(3);
-    let results2 = genetic_optimize(
-        100,
-        20,
-        &mut mvil,
-        multivalued_fn_i_3,
-        0.6,
-        0.01,
-        &OptimizeType::MAX,
-        &StopCondition::CYCLES(10),
-        false,
-        false,
+    let bounds_fn2 = Bounds::new(
+        MultivaluedFloat::new(2, vec![-2.048, -2.048]),
+        MultivaluedFloat::new(2, vec![2.048, 2.048]),
     );
 
-    match results2 {
-        Ok((v, fit)) => {
-            println!("Resultado: {}, Fitness: {}", v.to_string(), fit);
-        }
-        Err(s) => {
-            println!("Error: {}", s);
+    let bounds_fn6 = Bounds::new(
+        MultivaluedFloat::new(2, vec![-100.0, -100.0]),
+        MultivaluedFloat::new(2, vec![100.0, 100.0]),
+    );
+
+    multivaried_fn1.set_bounds(bounds_fn1);
+    multivaried_fn2.set_bounds(bounds_fn2);
+    multivaried_fn6.set_bounds(bounds_fn6);
+
+    let mut candidates = [multivaried_fn1, multivaried_fn2, multivaried_fn6];
+
+    let initial_size = [16, 30, 50, 1000];
+    let selected_per_round = [8, 15, 25, 500];
+    let mating_pr = 0.6;
+    let mut_pr = [0.2, 0.1, 0.07, 0.01];
+    let opt_type = OptimizeType::MIN;
+    let stop_condition = StopCondition::CYCLES(10);
+    let debug = false;
+    let show_fitness = false;
+
+    for i in 0..3 {
+        let f = functions[i];
+        println!("{}", tags[i]);
+        for j in 0..4 {
+            let results = genetic_optimize(
+                initial_size[j],
+                selected_per_round[j],
+                &mut candidates[i],
+                f,
+                mating_pr,
+                mut_pr[j],
+                &opt_type,
+                &stop_condition,
+                debug,
+                show_fitness,
+            );
+
+            match results {
+                Ok(v) => {
+                    println!("Fitness: {}, Value: {}", v.1, v.0.to_string());
+                }
+                Err(err) => println!("Error: {}", err),
+            }
         }
     }
 }
