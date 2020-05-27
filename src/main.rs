@@ -1,12 +1,13 @@
 #![allow(dead_code)]
 #![allow(non_camel_case_types)]
 #![allow(unused_variables)]
+#![allow(unused_assignments)]
 
 pub mod genetic;
 pub mod test_functions;
 
 use genetic::algorithms::genetic_optimize;
-use genetic::types::{FitnessReturn, MultivaluedFloat, MultivaluedInteger};
+use genetic::types::{FitnessReturn, MultivaluedFloat};
 use genetic::{implementations, OptimizeType, StopCondition};
 use implementations::multi_valued::{MVICandidateList, RCCList};
 use rand::{distributions::WeightedIndex, prelude::*, Rng};
@@ -68,7 +69,6 @@ fn main() {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use genetic::implementations::multi_valued::MVICandidateList;
     use genetic::implementations::multi_valued::MultivaluedIntCandidate;
     use genetic::implementations::single_valued::IntegerCandidate;
     use genetic::implementations::single_valued::IntegerCandidateList;
@@ -92,15 +92,6 @@ mod tests {
     }
 
     #[test]
-    fn test_diagnostics() {
-        let mut cl = setup();
-        cl.eval_fitness(squared);
-        let d = cl.get_diagnostics(&OptimizeType::MAX);
-        assert_eq!(d.0, 9.0);
-        assert_eq!(d.1, 3.5);
-    }
-
-    #[test]
     fn test_stop_condition() {
         let mut internal = InternalState::default();
         internal.max_achieved_fitness = 99.0;
@@ -118,9 +109,6 @@ mod tests {
 
     #[test]
     fn test_std_normal() {
-        use rand::distributions::StandardNormal;
-        use rand::rngs::SmallRng;
-        use rand::FromEntropy;
         use utils::get_alpha;
 
         for i in 0..1000 {
@@ -150,7 +138,7 @@ mod tests {
 
     #[test]
     fn test_mvic() {
-        let mvic = MultivaluedIntCandidate::new(3, "000000000000000001000000".to_string());
+        let mvic = MultivaluedIntCandidate::new(3, "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000".to_string());
         let values = mvic.get_vars_from_bit_string();
         assert_eq!(values, [0, 0, 64]);
     }
