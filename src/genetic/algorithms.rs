@@ -1,4 +1,4 @@
-use super::traits::CandidateList;
+use super::traits::{CandidateList, FitnessFunction};
 use super::types::FitnessReturn;
 use super::utils::debug_msg;
 use super::{InternalState, OptimizeType, StopCondition};
@@ -8,7 +8,7 @@ pub fn genetic_optimize<T, U: Clone>(
     n: usize, // Tamaño de la población inicial
     selected_per_round: usize,
     candidates: &mut impl CandidateList<T, U>,
-    fitness_fn: fn(U) -> FitnessReturn, // Función de adaptación
+    fitness_fn: impl FitnessFunction<U>, // Función de adaptación
     mating_pr: f32,
     mut_pr: f32,
     opt: &OptimizeType, // MAX/MIN
@@ -47,7 +47,7 @@ pub fn genetic_optimize<T, U: Clone>(
 
     // Generate initial round of candidates
     candidates.generate_initial_candidates(n);
-    candidates.eval_fitness(fitness_fn);
+    candidates.eval_fitness(&fitness_fn.get_closure());
 
     let tup = candidates.get_diagnostics(opt);
     fitness_over_time_y.push(tup.0);
@@ -90,7 +90,7 @@ pub fn genetic_optimize<T, U: Clone>(
         candidates.mate(n, selected_per_round, mating_pr, opt);
         candidates.mutate_list(mut_pr, opt);
 
-        candidates.eval_fitness(fitness_fn);
+        candidates.eval_fitness(&fitness_fn.get_closure());
 
         // Update stats
         let tup = candidates.get_diagnostics(opt);

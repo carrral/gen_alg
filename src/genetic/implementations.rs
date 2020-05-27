@@ -40,7 +40,7 @@ pub mod single_valued {
     }
 
     impl Candidate<isize> for IntegerCandidate {
-        fn eval_fitness(&mut self, f: fn(isize) -> FitnessReturn) -> FitnessReturn {
+        fn eval_fitness(&mut self, f: &Box<dyn Fn(isize) -> FitnessReturn>) -> FitnessReturn {
             let self_int = self.get_integer_representation();
             self.fitness = Some(f(self_int));
             f(self_int)
@@ -227,7 +227,7 @@ pub mod single_valued {
         }
 
         //Evaluates fitness for the whole candidate list
-        fn eval_fitness(&mut self, f: fn(isize) -> FitnessReturn) {
+        fn eval_fitness(&mut self, f: &Box<dyn Fn(isize) -> FitnessReturn>) {
             for candidate in &mut self.candidates {
                 candidate.eval_fitness(f);
             }
@@ -281,6 +281,7 @@ pub mod single_valued {
     }
 }
 pub mod multi_valued {
+    use super::super::traits::FitnessFunction;
     use super::super::traits::{Candidate, CandidateList};
     use super::super::types::{FitnessReturn, MultivaluedFloat, MultivaluedInteger};
     use super::super::utils::*;
@@ -309,7 +310,10 @@ pub mod multi_valued {
     impl Candidate<MultivaluedFloat> for RCCandidate {
         // Evalúa el valor de fitness de self.value, lo asigna en self.fitness
         // y lo regresa.
-        fn eval_fitness(&mut self, f: fn(MultivaluedFloat) -> FitnessReturn) -> FitnessReturn {
+        fn eval_fitness(
+            &mut self,
+            f: &Box<dyn Fn(MultivaluedFloat) -> FitnessReturn>,
+        ) -> FitnessReturn {
             let fit = f(self.vars.clone());
             self.fitness = Some(fit);
             fit
@@ -635,7 +639,7 @@ pub mod multi_valued {
         }
 
         //Evaluates fitness for the whole candidate list
-        fn eval_fitness(&mut self, f: fn(MultivaluedFloat) -> FitnessReturn) {
+        fn eval_fitness(&mut self, f: &Box<dyn Fn(MultivaluedFloat) -> FitnessReturn>) {
             for c in &mut self.candidates {
                 c.eval_fitness(f);
             }
@@ -775,7 +779,10 @@ pub mod multi_valued {
     impl<'a> Candidate<MultivaluedInteger> for MultivaluedIntCandidate {
         // Evalúa el valor de fitness de self.value, lo asigna en self.fitness
         // y lo regresa.
-        fn eval_fitness(&mut self, f: fn(MultivaluedInteger) -> FitnessReturn) -> FitnessReturn {
+        fn eval_fitness(
+            &mut self,
+            f: &Box<dyn Fn(MultivaluedInteger) -> FitnessReturn>,
+        ) -> FitnessReturn {
             //FIXME: Clone?
             // let v: MultivaluedInteger = self.vars.clone();
             let f = f(self.vars.clone());
@@ -1000,7 +1007,7 @@ pub mod multi_valued {
         }
 
         //Evaluates fitness for the whole candidate list
-        fn eval_fitness(&mut self, f: fn(MultivaluedInteger) -> FitnessReturn) {
+        fn eval_fitness(&mut self, f: &Box<dyn Fn(MultivaluedInteger) -> FitnessReturn>) {
             //FIXME: Agregar un genérico en la definición del trait, diferente a candidate
             for candidate in &mut self.candidates {
                 candidate.eval_fitness(f);

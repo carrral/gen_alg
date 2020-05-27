@@ -4,7 +4,7 @@ use super::{InternalState, OptimizeType, StopCondition};
 pub trait Candidate<T> {
     // Evalúa el valor de fitness de self.value, lo asigna en self.fitness
     // y lo regresa.
-    fn eval_fitness(&mut self, f: fn(T) -> FitnessReturn) -> FitnessReturn;
+    fn eval_fitness(&mut self, f: &Box<dyn Fn(T) -> FitnessReturn>) -> FitnessReturn;
     fn to_string(&self) -> String;
     fn get_fitness(&self) -> Option<FitnessReturn>;
     fn debug(&self);
@@ -26,7 +26,7 @@ pub trait CandidateList<T, U> {
     fn mutate_list(&mut self, mut_pr: f32, opt: &OptimizeType);
 
     //Evaluates fitness for the whole candidate list
-    fn eval_fitness(&mut self, f: fn(U) -> FitnessReturn);
+    fn eval_fitness(&mut self, f: &Box<dyn Fn(U) -> FitnessReturn>);
 
     // fn get_fittest(&self, opt_type: &OptimizeType) -> &dyn Candidate<T>;
 
@@ -52,5 +52,6 @@ pub trait CandidateList<T, U> {
 
 pub trait FitnessFunction<U> {
     // TODO: Should return Result<FitnessFunction>
-    fn eval(t: U) -> FitnessReturn;
+    fn eval(&self, t: U) -> FitnessReturn;
+    fn get_closure(&self) -> &Box<dyn Fn(U) -> FitnessReturn>;
 }
