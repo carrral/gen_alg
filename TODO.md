@@ -1,26 +1,20 @@
 ## TODO
 
-### URGENTE
-
-* Corregir: la función de reproducción no elige correctamente los valores
-* Implementar FitnessFunction
-* Cambiar el nombre a MultivariedFloat
-* Guardar máximos y mínimos globales dentro del algoritmo
-
-
 * Niveles de verbosidad
-* Ajustar métodos que puedan regresar Result (a nivel impl)
-* Wrapper para Parámetro con el fin de delimitar positivos, negativos y bits
-  decimales
+* Ajustar métodos que puedan regresar Result (a nivel trait)
 * Implementación de StopCondition::ERROR_MARGIN
-* Boundaries
-* struct Range (Para limitar y dar estructura a los parámetros)
-* Módulos
 * Error Handling
-* Mandarfuncion bin -> uint a wrapper
+* Mandar función bin -> uint a wrapper
 
 ## Changelog
 
+* Cambiar el nombre a MultivaluedFloat
+* Implementación de trait FitnessFunction
+* Guardar máximos y mínimos globales dentro del algoritmo
+* Corregir: la función de reproducción no elige correctamente los valores
+* Bounds
+* Módulos
+* Ahora FitnessFunction se procesa dentro de un Box<dyn F(U) -> FitnessReturn>
 * trait Function{} (wrapper)
 * Implementaciónde candidato multivariado Float
 * Implementación de MVFCandidateList
@@ -41,8 +35,4 @@
 * Parámetro de StopCondition::{CICLES,ERROR}
 * Verifición de funcionamiento de mutate (No parece mutar como esperado): Se queda
   en plateau en un valor arbitrario
-* fn reproducir_elitista(L,n):
-    -Toma una lista de candidatos L con long. L.len()
-    -n: Número de candidatos que tiene que regresar
-* Cambiar parámetros en la fn mutate(OptimizeType)
 * Modificar sort() de acuerdo a si es MIN o MAX
