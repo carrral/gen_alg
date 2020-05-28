@@ -8,7 +8,7 @@ Para mostrar los ploteos es necesaria la instalación de `GNU Plot`.
 
 ## Parámetros
 
-La función `basic_genetic_algorithm()` toma los siguientes parámetros:
+La función `genetic_optimize()` toma los siguientes parámetros:
 
     n:  Tamaño de la población inicial
 
@@ -30,14 +30,16 @@ La función `basic_genetic_algorithm()` toma los siguientes parámetros:
 
     show_fitness_plot: Mostrar ploteos de fitness (V/F).
 
-Actualmente, el algoritmo está configurado para maximizar la función 
-    f(x,y) = -(x - 5)² - (y - 7)² + 5
-con óptimo global en (5,7)
+Actualmente, el algoritmo está configurado para maximizar la función de
+Rosenbrock de 2 variables con óptimo global en f(1,1) = 0.
 
 
 ## Correr el programa
 
 Dentro de la carpeta de instalación, ejecutar
 
+```bash
     $ cargo run > results.txt
+```
+
 Esto almacenará los resultados en result.txt
