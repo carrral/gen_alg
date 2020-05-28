@@ -9,54 +9,31 @@ pub mod test_functions;
 use genetic::algorithms::genetic_optimize;
 use genetic::types::{FitnessReturn, MultivaluedFloat};
 use genetic::{implementations, OptimizeType, StopCondition};
-use implementations::multi_valued::{MVICandidateList, RCCList};
+use implementations::multi_valued::RCCList;
 use rand::{distributions::WeightedIndex, prelude::*, Rng};
-use test_functions::*;
+use test_functions::Rosenbrock;
 
 fn main() {
     let mut mvfl = RCCList::new(2);
-    let lower_bound = MultivaluedFloat::new(2, vec![-30.0, -30.0]);
-    let upper_bound = MultivaluedFloat::new(2, vec![30.0, 30.0]);
+    let lower_bound = MultivaluedFloat::new(2, vec![-2.0, -2.0]);
+    let upper_bound = MultivaluedFloat::new(2, vec![2.0, 2.0]);
     let bounds = genetic::Bounds::new(lower_bound, upper_bound);
     mvfl.set_bounds(bounds);
 
     let results = genetic_optimize(
-        16,
-        4,
+        1000,
+        300,
         &mut mvfl,
-        multivalued_fn2,
+        Rosenbrock::new(),
         0.6,
-        0.01,
-        &OptimizeType::MAX,
+        0.1,
+        &OptimizeType::MIN,
         &StopCondition::CYCLES(100),
         false,
         false,
     );
 
     match results {
-        Ok((v, fit)) => {
-            println!("Resultado: {}, Fitness: {}", v.to_string(), fit);
-        }
-        Err(s) => {
-            println!("Error: {}", s);
-        }
-    }
-
-    let mut mvil = MVICandidateList::new(3);
-    let results2 = genetic_optimize(
-        100,
-        20,
-        &mut mvil,
-        multivalued_fn_i_3,
-        0.6,
-        0.01,
-        &OptimizeType::MAX,
-        &StopCondition::CYCLES(10),
-        false,
-        false,
-    );
-
-    match results2 {
         Ok((v, fit)) => {
             println!("Resultado: {}, Fitness: {}", v.to_string(), fit);
         }

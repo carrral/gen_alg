@@ -281,7 +281,6 @@ pub mod single_valued {
     }
 }
 pub mod multi_valued {
-    use super::super::traits::FitnessFunction;
     use super::super::traits::{Candidate, CandidateList};
     use super::super::types::{FitnessReturn, MultivaluedFloat, MultivaluedInteger};
     use super::super::utils::*;
