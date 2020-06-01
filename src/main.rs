@@ -26,6 +26,17 @@ fn f2(mvf: MultivaluedFloat) -> FitnessReturn {
     return 100.0 * (x2 - x1.powi(2)).powi(2) + (1.0 - x1.powi(2));
 }
 
+fn f3(mvf: MultivaluedFloat) -> FitnessReturn {
+    let x: Vec<f32> = mvf.vars_value;
+    let lower: f32 = -5.12;
+    let upper: f32 = 5.12;
+
+    let step_fn = |xi: &f32| xi.floor();
+
+    let sum = x.iter().map(step_fn).sum();
+    return sum;
+}
+
 fn f6(mvf: MultivaluedFloat) -> FitnessReturn {
     let x1: f32 = mvf.vars_value[0];
     let x2: f32 = mvf.vars_value[1];
@@ -41,12 +52,13 @@ fn f6(mvf: MultivaluedFloat) -> FitnessReturn {
 }
 
 fn main() {
-    let functions = [f1, f2, f6];
-    let n_vars = [3, 2, 2];
-    let tags = ["Función 1", "Función 2", "Función 6"];
+    let functions = [f1, f2, f3, f6];
+    let n_vars = [3, 2, 5, 2];
+    let tags = ["Función 1", "Función 2", "Función 3", "Función 6"];
 
     let mut multivaried_fn1 = RCCList::new(3);
     let mut multivaried_fn2 = RCCList::new(2);
+    let mut multivaried_fn3 = RCCList::new(5);
     let mut multivaried_fn6 = RCCList::new(2);
 
     let bounds_fn1 = Bounds::new(
@@ -59,6 +71,11 @@ fn main() {
         MultivaluedFloat::new(2, vec![2.048, 2.048]),
     );
 
+    let bounds_fn3 = Bounds::new(
+        MultivaluedFloat::new(5, vec![-5.12; 5]),
+        MultivaluedFloat::new(5, vec![5.12; 5]),
+    );
+
     let bounds_fn6 = Bounds::new(
         MultivaluedFloat::new(2, vec![-100.0, -100.0]),
         MultivaluedFloat::new(2, vec![100.0, 100.0]),
@@ -66,10 +83,17 @@ fn main() {
 
     multivaried_fn1.set_bounds(bounds_fn1);
     multivaried_fn2.set_bounds(bounds_fn2);
+    multivaried_fn3.set_bounds(bounds_fn3);
     multivaried_fn6.set_bounds(bounds_fn6);
 
-    let mut candidates = [multivaried_fn1, multivaried_fn2, multivaried_fn6];
+    let mut candidates = [
+        multivaried_fn1,
+        multivaried_fn2,
+        multivaried_fn3,
+        multivaried_fn6,
+    ];
 
+    const PARAM_LENGTH: usize = 4;
     let initial_size = [16, 30, 50, 1000];
     let selected_per_round = [8, 15, 25, 500];
     let mating_pr = 0.6;
@@ -78,12 +102,14 @@ fn main() {
     let stop_condition = StopCondition::CYCLES(10);
     let debug = false;
     let show_fitness = false;
+    let mut results: Vec<Vec<Result<(MultivaluedFloat, FitnessReturn), String>>> =
+        vec![vec![]; functions.len()];
 
-    for i in 0..3 {
+    for i in 0..functions.len() {
         let f = functions[i];
         println!("{}", tags[i]);
-        for j in 0..4 {
-            let results = genetic_optimize(
+        for j in 0..PARAM_LENGTH {
+            let _results = genetic_optimize(
                 initial_size[j],
                 selected_per_round[j],
                 &mut candidates[i],
@@ -96,12 +122,14 @@ fn main() {
                 show_fitness,
             );
 
-            match results {
+            match &_results {
                 Ok(v) => {
                     println!("Fitness: {}, Value: {}", v.1, v.0.to_string());
                 }
                 Err(err) => println!("Error: {}", err),
             }
+
+            results[i].push(_results);
         }
     }
 }
