@@ -18,20 +18,6 @@ impl Rosenbrock {
 }
 
 impl FitnessFunction<MultivaluedFloat> for Rosenbrock {
-    fn eval(&self, mvf: MultivaluedFloat) -> FitnessReturn {
-        if mvf.n_vars != 2 {
-            panic!(
-                "Ésta función toma 2 parámetros, se recibieron {}",
-                mvf.n_vars
-            );
-        }
-
-        let x: f32 = mvf.vars_value[0];
-        let y: f32 = mvf.vars_value[1];
-
-        (1f32 - x).powi(2) + 100f32 * (y - x.powi(2)).powi(2)
-    }
-
     fn get_closure(&self) -> &Box<dyn Fn(MultivaluedFloat) -> FitnessReturn> {
         return &self.f;
     }

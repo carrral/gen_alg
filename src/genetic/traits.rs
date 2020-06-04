@@ -52,6 +52,5 @@ pub trait CandidateList<T, U> {
 
 pub trait FitnessFunction<U> {
     // TODO: Should return Result<FitnessFunction>
-    fn eval(&self, t: U) -> FitnessReturn;
     fn get_closure(&self) -> &Box<dyn Fn(U) -> FitnessReturn>;
 }
