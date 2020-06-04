@@ -4,6 +4,7 @@
 #![allow(unused_assignments)]
 
 pub mod genetic;
+pub mod k_means;
 pub mod test_functions;
 
 use genetic::algorithms::genetic_optimize;

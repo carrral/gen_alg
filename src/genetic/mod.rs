@@ -6,18 +6,6 @@ pub mod traits;
 pub mod types;
 pub mod utils;
 
-pub mod constants {
-    // ==-- CONSTANTS --==
-    pub const TEST_RANGE: isize = 10;
-    pub const IND_SIZE: usize = 8; // Must be even
-    pub const POP_SIZE: usize = 8;
-    pub const GEN: usize = 10;
-    pub const MUT_PR: f32 = 0.3;
-    pub const REP_PR: f32 = 0.7;
-    pub const SELECTED_EACH_ROUND: usize = 4;
-    pub const DEBUG: bool = true;
-}
-
 #[derive(PartialEq, Eq)]
 pub enum OptimizeType {
     MAX,
