@@ -35,6 +35,10 @@ impl<'a> Point<'a> {
         Ok(sum.sqrt())
     }
 
+    pub fn to_string(&self) -> String {
+        format!("Point({:?})", self.get_values())
+    }
+
     // pub fn set_values(&mut self, values: &'a [f32]) {
     // self.values = values;
     // }

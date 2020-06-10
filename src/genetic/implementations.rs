@@ -32,6 +32,11 @@ pub mod single_valued {
         fn len(&self) -> usize {
             self.value.chars().count()
         }
+        fn eval_fitness(&mut self, f: &Box<dyn Fn(isize) -> FitnessReturn>) -> FitnessReturn {
+            let self_int = self.get_integer_representation();
+            self.fitness = Some(f(self_int));
+            f(self_int)
+        }
     }
     impl Default for IntegerCandidate {
         fn default() -> Self {
@@ -40,12 +45,6 @@ pub mod single_valued {
     }
 
     impl Candidate<isize> for IntegerCandidate {
-        fn eval_fitness(&mut self, f: &Box<dyn Fn(isize) -> FitnessReturn>) -> FitnessReturn {
-            let self_int = self.get_integer_representation();
-            self.fitness = Some(f(self_int));
-            f(self_int)
-        }
-
         fn get_fitness(&self) -> Option<FitnessReturn> {
             self.fitness
         }
@@ -304,11 +303,6 @@ pub mod multi_valued {
                 selected_for_mating: false,
             }
         }
-    }
-
-    impl Candidate<MultivaluedFloat> for RCCandidate {
-        // Evalúa el valor de fitness de self.value, lo asigna en self.fitness
-        // y lo regresa.
         fn eval_fitness(
             &mut self,
             f: &Box<dyn Fn(MultivaluedFloat) -> FitnessReturn>,
@@ -317,6 +311,11 @@ pub mod multi_valued {
             self.fitness = Some(fit);
             fit
         }
+    }
+
+    impl Candidate<MultivaluedFloat> for RCCandidate {
+        // Evalúa el valor de fitness de self.value, lo asigna en self.fitness
+        // y lo regresa.
 
         fn to_string(&self) -> String {
             let fit = match self.fitness {
@@ -773,11 +772,7 @@ pub mod multi_valued {
                 selected: false,
             }
         }
-    }
 
-    impl<'a> Candidate<MultivaluedInteger> for MultivaluedIntCandidate {
-        // Evalúa el valor de fitness de self.value, lo asigna en self.fitness
-        // y lo regresa.
         fn eval_fitness(
             &mut self,
             f: &Box<dyn Fn(MultivaluedInteger) -> FitnessReturn>,
@@ -789,6 +784,11 @@ pub mod multi_valued {
             self.fitness = Some(f);
             return f;
         }
+    }
+
+    impl<'a> Candidate<MultivaluedInteger> for MultivaluedIntCandidate {
+        // Evalúa el valor de fitness de self.value, lo asigna en self.fitness
+        // y lo regresa.
 
         fn to_string(&self) -> String {
             let fit = match self.get_fitness() {
