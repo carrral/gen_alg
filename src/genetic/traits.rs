@@ -4,7 +4,7 @@ use super::{InternalState, OptimizeType, StopCondition};
 pub trait Candidate<T> {
     // Evalúa el valor de fitness de self.value, lo asigna en self.fitness
     // y lo regresa.
-    // fn eval_fitness(&mut self, f: &Box<dyn Fn(T) -> FitnessReturn>) -> FitnessReturn;
+    fn eval_fitness(&mut self, f: &Box<dyn Fn(T) -> FitnessReturn>) -> FitnessReturn;
     fn to_string(&self) -> String;
     fn get_fitness(&self) -> Option<FitnessReturn>;
     fn debug(&self);

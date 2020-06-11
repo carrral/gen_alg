@@ -32,7 +32,7 @@ pub type Center<'a> = Point<'a>;
 pub struct Space<'b> {
     // clusters: Option<Vec<Cluster<'b>>>,
     dimmensions: usize,
-    points: Vec<Point<'b>>,
+    pub points: Vec<Point<'b>>,
 }
 
 impl<'b> Space<'b> {

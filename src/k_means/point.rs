@@ -1,4 +1,5 @@
 // #[derive(Clone)]
+// #[derive(Copy)]
 pub struct Point<'a> {
     // pub struct Point {
     values: &'a [f32],

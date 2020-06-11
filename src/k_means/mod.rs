@@ -20,10 +20,7 @@ struct Kmeans<'a> {
 impl<'a> Kmeans<'a> {
     /// Initializes the k-means algorithm with k  clusters with
     /// k random cluster centers
-    // fn new(k: usize, dimmensions: usize, space: Space) -> (Self, ClusterList) {
     fn new(k: usize, dimmensions: usize, space: Space) {
-        // randomly select k starting points as cluster centers
-
         let f = |mvf: MultivaluedFloat| {};
     }
 

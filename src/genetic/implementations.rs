@@ -32,11 +32,6 @@ pub mod single_valued {
         fn len(&self) -> usize {
             self.value.chars().count()
         }
-        fn eval_fitness(&mut self, f: &Box<dyn Fn(isize) -> FitnessReturn>) -> FitnessReturn {
-            let self_int = self.get_integer_representation();
-            self.fitness = Some(f(self_int));
-            f(self_int)
-        }
     }
     impl Default for IntegerCandidate {
         fn default() -> Self {
@@ -63,6 +58,12 @@ pub mod single_valued {
             ));
 
             return s;
+        }
+
+        fn eval_fitness(&mut self, f: &Box<dyn Fn(isize) -> FitnessReturn>) -> FitnessReturn {
+            let self_int = self.get_integer_representation();
+            self.fitness = Some(f(self_int));
+            f(self_int)
         }
 
         fn debug(&self) {
@@ -303,14 +304,6 @@ pub mod multi_valued {
                 selected_for_mating: false,
             }
         }
-        fn eval_fitness(
-            &mut self,
-            f: &Box<dyn Fn(MultivaluedFloat) -> FitnessReturn>,
-        ) -> FitnessReturn {
-            let fit = f(self.vars.clone());
-            self.fitness = Some(fit);
-            fit
-        }
     }
 
     impl Candidate<MultivaluedFloat> for RCCandidate {
@@ -340,10 +333,18 @@ pub mod multi_valued {
         fn mutate(&mut self, opt_type: &OptimizeType) {
             ()
         }
+        fn eval_fitness(
+            &mut self,
+            f: &Box<dyn Fn(MultivaluedFloat) -> FitnessReturn>,
+        ) -> FitnessReturn {
+            let fit = f(self.vars.clone());
+            self.fitness = Some(fit);
+            fit
+        }
     }
 
     pub struct RCCList {
-        candidates: Vec<RCCandidate>,
+        pub candidates: Vec<RCCandidate>,
         current_cycle: Option<usize>,
         max_cycles: Option<usize>,
         bounds: Option<Bounds<MultivaluedFloat>>,
@@ -772,18 +773,6 @@ pub mod multi_valued {
                 selected: false,
             }
         }
-
-        fn eval_fitness(
-            &mut self,
-            f: &Box<dyn Fn(MultivaluedInteger) -> FitnessReturn>,
-        ) -> FitnessReturn {
-            //FIXME: Clone?
-            // let v: MultivaluedInteger = self.vars.clone();
-            let f = f(self.vars.clone());
-
-            self.fitness = Some(f);
-            return f;
-        }
     }
 
     impl<'a> Candidate<MultivaluedInteger> for MultivaluedIntCandidate {
@@ -800,6 +789,18 @@ pub mod multi_valued {
                 self.vars.to_string(),
                 fit,
             )
+        }
+
+        fn eval_fitness(
+            &mut self,
+            f: &Box<dyn Fn(MultivaluedInteger) -> FitnessReturn>,
+        ) -> FitnessReturn {
+            //FIXME: Clone?
+            // let v: MultivaluedInteger = self.vars.clone();
+            let f = f(self.vars.clone());
+
+            self.fitness = Some(f);
+            return f;
         }
 
         fn get_fitness(&self) -> Option<FitnessReturn> {

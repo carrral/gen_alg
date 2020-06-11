@@ -1,35 +1,62 @@
 use super::super::genetic::implementations::multi_valued::{RCCList, RCCandidate};
 use super::super::genetic::traits::{Candidate, CandidateList};
 use super::super::genetic::types::{FitnessReturn, MultivaluedFloat};
+use super::super::genetic::utils::random_range;
 use super::super::genetic::{InternalState, OptimizeType, StopCondition};
 use super::point::Point;
+use super::space::Space;
 use super::Kmeans;
 
 /// Wrapper struct for RCCList
-// pub struct ClusterList<'a> {
-pub struct ClusterList {
+pub struct ClusterList<'a> {
     ///This will perform the  heavy lifting except for a few functions
     list: RCCList,
     k: usize,
-    // kmeans_struct: &'a Kmeans<'a>,
+    dimmensions: usize,
+    ///Space struct whose points will be used for initializing candidates
+    space_ref: &'a Space<'a>,
 }
 
-// impl<'a> ClusterList<'a> {
-impl ClusterList {
-    pub fn new(k: usize, dimmensions: usize) -> Self {
+impl<'a> ClusterList<'a> {
+    // impl ClusterList {
+    pub fn new(k: usize, dimmensions: usize, space_ref: &'a Space) -> Self {
         ClusterList {
             list: RCCList::new(k * dimmensions),
             k,
-            // kmeans_struct,
+            dimmensions,
+            space_ref,
         }
     }
 }
 
-// impl<'a> CandidateList<RCCandidate, MultivaluedFloat> for ClusterList<'a> {
-impl CandidateList<RCCandidate, MultivaluedFloat> for ClusterList {
-    /// Does nothing, as the initial candidates have already been generated
-    /// by Kmeans
-    fn generate_initial_candidates(&mut self, requested: usize) {}
+impl<'a> CandidateList<RCCandidate, MultivaluedFloat> for ClusterList<'a> {
+    // impl CandidateList<RCCandidate, MultivaluedFloat> for ClusterList {
+    fn generate_initial_candidates(&mut self, requested: usize) {
+        // Get k random points from space_ref requested times
+        for i in 0..requested {
+            let mut random_points_index: Vec<usize> = vec![];
+            for j in 0..self.k {
+                let random = random_range(0, self.space_ref.len() as isize);
+                random_points_index.push(random as usize);
+            }
+
+            // Accumulate point's values into  a k * dimm vector
+            let mut init_vector: Vec<f32> = Vec::with_capacity(self.k * self.dimmensions);
+            for index in random_points_index.iter() {
+                let selected_center: &Point = &self.space_ref.points[i];
+                for value in selected_center.get_values() {
+                    init_vector.push(*value);
+                }
+            }
+
+            // At this point, the vector should be brand new and not related to the Points in Space
+            // in any way.
+
+            // Initialize candidate
+            let new_candidate = RCCandidate::new(self.k * self.dimmensions, &init_vector);
+            self.list.candidates.push(new_candidate);
+        }
+    }
 
     // Returns (max_fitness, avg_fitness)
     fn get_diagnostics(&self, opt_type: &OptimizeType) -> (FitnessReturn, FitnessReturn) {
@@ -85,74 +112,74 @@ impl CandidateList<RCCandidate, MultivaluedFloat> for ClusterList {
     }
 }
 
-/// Wrapper for RCCandidate. Instead of instantiating Points for each fitness evaluation, the
-/// Points it contains refer to the same slice during their lifetime so they dont need to be
-/// updated.
-struct ClusterCenterCandidate<'a> {
-    /// Manages Candidate operations
-    rccandidate: RCCandidate,
+// Wrapper for RCCandidate. Instead of instantiating Points for each fitness evaluation, the
+// Points it contains refer to the same slice during their lifetime so they dont need to be
+// updated.
+// struct ClusterCenterCandidate<'a> {
+// /// Manages Candidate operations
+// rccandidate: RCCandidate,
 
-    /// Saves slices of RCCandidate as a Point Structure
-    points: Vec<Point<'a>>,
-}
+// /// Saves slices of RCCandidate as a Point Structure
+// points: Vec<Point<'a>>,
+// }
 
-impl<'a> ClusterCenterCandidate<'a> {
-    // impl ClusterCenterCandidate {
-    pub fn new(k: usize, dimmensions: usize, values: &'a Vec<f32>) -> Self {
-        let rccandidate = RCCandidate::new(k * dimmensions, &values);
+// impl<'a> ClusterCenterCandidate<'a> {
+// // impl ClusterCenterCandidate {
+// pub fn new(k: usize, dimmensions: usize, values: &'a Vec<f32>) -> Self {
+// let rccandidate = RCCandidate::new(k * dimmensions, &values);
 
-        // Slice values vector into k points  as (cluster centers)
+// // Slice values vector into k points  as (cluster centers)
 
-        let mut slices = vec![];
+// let mut slices = vec![];
 
-        for i in 0..k {
-            let slice = &values[k..(k + dimmensions)];
-            slices.push(slice);
-        }
+// for i in 0..k {
+// let slice = &values[k..(k + dimmensions)];
+// slices.push(slice);
+// }
 
-        let mut points = vec![];
+// let mut points = vec![];
 
-        for i in 0..slices.len() {
-            let point = Point::new(slices[i]);
-            points.push(point);
-        }
+// for i in 0..slices.len() {
+// let point = Point::new(slices[i]);
+// points.push(point);
+// }
 
-        ClusterCenterCandidate {
-            rccandidate,
-            points,
-        }
-    }
-    fn eval_fitness<'b>(
-        &mut self,
-        f: &'b Box<dyn Fn(&Vec<Point<'a>>) -> FitnessReturn>,
-    ) -> FitnessReturn {
-        // fn eval_fitness(&mut self, f: Box<dyn Fn(&Vec<Point<'a>>) -> FitnessReturn>) -> FitnessReturn {
-        f(&self.points)
-        // unimplemented!()
-    }
-}
+// ClusterCenterCandidate {
+// rccandidate,
+// points,
+// }
+// }
+// fn eval_fitness<'b>(
+// &mut self,
+// f: &'b Box<dyn Fn(&Vec<Point<'a>>) -> FitnessReturn>,
+// ) -> FitnessReturn {
+// // fn eval_fitness(&mut self, f: Box<dyn Fn(&Vec<Point<'a>>) -> FitnessReturn>) -> FitnessReturn {
+// f(&self.points)
+// // unimplemented!()
+// }
+// }
 
-impl<'a> Candidate<&Vec<Point<'a>>> for ClusterCenterCandidate<'a> {
-    // Evalúa el valor de fitness de self.value, lo asigna en self.fitness
-    // y lo regresa.
+// // impl<'a> Candidate<&Vec<Point<'a>>> for ClusterCenterCandidate<'a> {
+// // // Evalúa el valor de fitness de self.value, lo asigna en self.fitness
+// // // y lo regresa.
 
-    fn to_string(&self) -> String {
-        let mut string = String::from("ClusterCenters(");
-        for point in &self.points {
-            let point_str = point.to_string();
-            string.push_str(&point_str);
-        }
-        string.push_str(")");
+// // fn to_string(&self) -> String {
+// // let mut string = String::from("ClusterCenters(");
+// // for point in &self.points {
+// // let point_str = point.to_string();
+// // string.push_str(&point_str);
+// // }
+// // string.push_str(")");
 
-        return string;
-    }
-    fn get_fitness(&self) -> Option<FitnessReturn> {
-        return self.rccandidate.get_fitness();
-    }
-    fn debug(&self) {
-        println!("{}", self.to_string());
-    }
-    fn mutate(&mut self, opt_type: &OptimizeType) {
-        self.rccandidate.mutate(opt_type);
-    }
-}
+// // return string;
+// // }
+// // fn get_fitness(&self) -> Option<FitnessReturn> {
+// // return self.rccandidate.get_fitness();
+// // }
+// // fn debug(&self) {
+// // println!("{}", self.to_string());
+// // }
+// // fn mutate(&mut self, opt_type: &OptimizeType) {
+// // self.rccandidate.mutate(opt_type);
+// // }
+// // }
