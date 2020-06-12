@@ -58,18 +58,9 @@ impl<'a> Kmeans<'a> {
 
 impl<'a> FitnessFunction<'a, MultivaluedFloat> for Kmeans<'a> {
     // TODO: Should return Result<FitnessFunction>
-    fn get_closure(&self) -> &'a Box<dyn Fn(MultivaluedFloat) -> FitnessReturn> {
-        // self.fitness = Box::new(|mvf: MultivaluedFloat| {
-        // // Create points from mvf
-
-        // let centers = Kmeans::mvf_as_points(&mvf, self.dimmensions, self.k);
-        // 0.0
-        // });
-        // return &self.fitness;
-        unimplemented!();
-    }
 
     fn eval(&self, mvf: MultivaluedFloat) -> FitnessReturn {
+        let centers = Kmeans::mvf_as_points(&mvf, self.dimmensions, self.k);
         0.0
     }
 }

@@ -18,10 +18,6 @@ impl<'a> Rosenbrock {
 }
 
 impl<'a> FitnessFunction<'a, MultivaluedFloat> for Rosenbrock {
-    fn get_closure<'b>(&self) -> &'a Box<dyn Fn(MultivaluedFloat) -> FitnessReturn> {
-        // return &self.f;
-        unimplemented!();
-    }
     fn eval(&self, mvf: MultivaluedFloat) -> FitnessReturn {
         if mvf.n_vars != 2 {
             panic!(

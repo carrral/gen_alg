@@ -61,10 +61,10 @@ pub mod single_valued {
         }
 
         fn eval_fitness(&mut self, f: &FitnessFunction<'a, isize>) -> FitnessReturn {
-            // let self_int = self.get_integer_representation();
-            // self.fitness = Some(f(self_int));
-            // f(self_int)
-            unimplemented!();
+            let self_int = self.get_integer_representation();
+            let fit = f.eval(self_int);
+            self.fitness = Some(fit);
+            return fit;
         }
 
         fn debug(&self) {
@@ -795,11 +795,10 @@ pub mod multi_valued {
         ) -> FitnessReturn {
             //FIXME: Clone?
             // let v: MultivaluedInteger = self.vars.clone();
-            // let f = f(self.vars.clone());
+            let f = f.eval(self.vars.clone());
 
-            // self.fitness = Some(f);
-            // return f;
-            unimplemented!();
+            self.fitness = Some(f);
+            return f;
         }
 
         fn get_fitness(&self) -> Option<FitnessReturn> {
