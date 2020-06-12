@@ -1,14 +1,14 @@
 // #[derive(Clone)]
 // #[derive(Copy)]
 pub struct Point<'a> {
-    // pub struct Point {
     values: &'a [f32],
+    tag: Option<char>,
 }
 
 impl<'a> Point<'a> {
     // impl Point {
     pub fn new(values: &'a [f32]) -> Self {
-        Point { values }
+        Point { values, tag: None }
     }
 
     pub fn get_values(&self) -> &[f32] {

@@ -1,16 +1,16 @@
 use super::types::*;
 use super::{InternalState, OptimizeType, StopCondition};
 
-pub trait Candidate<T> {
+pub trait Candidate<'a, T> {
     // Evalúa el valor de fitness de self.value, lo asigna en self.fitness
     // y lo regresa.
-    fn eval_fitness(&mut self, f: &Box<dyn Fn(T) -> FitnessReturn>) -> FitnessReturn;
+    fn eval_fitness(&mut self, f: &dyn FitnessFunction<'a, T>) -> FitnessReturn;
     fn to_string(&self) -> String;
     fn get_fitness(&self) -> Option<FitnessReturn>;
     fn debug(&self);
     fn mutate(&mut self, opt_type: &OptimizeType);
 }
-pub trait CandidateList<T, U> {
+pub trait CandidateList<'a, T, U> {
     /// @T: Type that will be held in internal candidate vector
     /// @U: Type that will be evaluated in the fitness function provided
     // Generates an initial vector of Random Candidates
@@ -26,7 +26,7 @@ pub trait CandidateList<T, U> {
     fn mutate_list(&mut self, mut_pr: f32, opt: &OptimizeType);
 
     //Evaluates fitness for the whole candidate list
-    fn eval_fitness(&mut self, f: &Box<dyn Fn(U) -> FitnessReturn>);
+    fn eval_fitness(&mut self, f: &dyn FitnessFunction<'a, U>);
 
     // fn get_fittest(&self, opt_type: &OptimizeType) -> &dyn Candidate<T>;
 
@@ -50,7 +50,9 @@ pub trait CandidateList<T, U> {
     fn track_internal_state(&mut self, internal_state: &InternalState);
 }
 
-pub trait FitnessFunction<U> {
+pub trait FitnessFunction<'a, U> {
     // TODO: Should return Result<FitnessFunction>
-    fn get_closure(&self) -> &Box<dyn Fn(U) -> FitnessReturn>;
+    fn get_closure<'b>(&self) -> &'a Box<dyn Fn(U) -> FitnessReturn>;
+
+    fn eval(&self, v: U) -> FitnessReturn;
 }

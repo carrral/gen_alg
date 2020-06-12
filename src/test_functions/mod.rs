@@ -9,7 +9,7 @@ pub struct Rosenbrock {
     f: Box<dyn Fn(MultivaluedFloat) -> FitnessReturn>,
 }
 
-impl Rosenbrock {
+impl<'a> Rosenbrock {
     pub fn new() -> Self {
         Rosenbrock {
             f: Box::new(rosenbrock_banana),
@@ -17,9 +17,23 @@ impl Rosenbrock {
     }
 }
 
-impl FitnessFunction<MultivaluedFloat> for Rosenbrock {
-    fn get_closure(&self) -> &Box<dyn Fn(MultivaluedFloat) -> FitnessReturn> {
-        return &self.f;
+impl<'a> FitnessFunction<'a, MultivaluedFloat> for Rosenbrock {
+    fn get_closure<'b>(&self) -> &'a Box<dyn Fn(MultivaluedFloat) -> FitnessReturn> {
+        // return &self.f;
+        unimplemented!();
+    }
+    fn eval(&self, mvf: MultivaluedFloat) -> FitnessReturn {
+        if mvf.n_vars != 2 {
+            panic!(
+                "Ésta función toma 2 parámetros, se recibieron {}",
+                mvf.n_vars
+            );
+        }
+
+        let x: f32 = mvf.vars_value[0];
+        let y: f32 = mvf.vars_value[1];
+
+        (1f32 - x).powi(2) + 100f32 * (y - x.powi(2)).powi(2)
     }
 }
 

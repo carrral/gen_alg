@@ -7,6 +7,7 @@ use super::genetic::traits::FitnessFunction;
 use super::genetic::types::FitnessReturn;
 use super::genetic::types::MultivaluedFloat;
 use super::genetic::utils::random_range;
+use point::Point;
 use space::{Center, Space};
 use wrapper::ClusterList;
 
@@ -18,47 +19,68 @@ struct Kmeans<'a> {
 }
 
 impl<'a> Kmeans<'a> {
-    /// Initializes the k-means algorithm with k  clusters with
-    /// k random cluster centers
-    fn new(k: usize, dimmensions: usize, space: Space) {
-        let f = |mvf: MultivaluedFloat| {};
-    }
-
-    pub fn vector_as_points(&self, mvf: MultivaluedFloat) {
-        if mvf.n_vars != self.dimmensions * self.k {
-            panic!("Mismatch in dimmensions");
+    pub fn new(
+        k: usize,
+        dimmensions: usize,
+        space: Space<'a>,
+        fitness: Box<dyn Fn(MultivaluedFloat) -> FitnessReturn>,
+    ) -> Self {
+        Kmeans {
+            fitness: Box::new(fitness),
+            space,
+            k,
+            dimmensions,
         }
     }
 
-    /// Returns a "flattened" K*Dimmension vector of random clusters
-    /// for ClusterList candidate initialization
-    pub fn init_random_clusters(&self) -> Vec<f32> {
-        let centers_index =
-            (0..self.k).map(|i| random_range(0, self.space.len() as isize) as usize);
-        // Collects into an iterable of Cluster centers (points)
-        let clusters = centers_index.map(|index| {
-            // Get clone of Point  with given index as a starting point
-            // for the algorithm
-            let center = self.space.get_points()[index].get_values();
-            return center;
-        });
+    /// Structures a mvf as a list of points so dist_euclidian can be applied to each. Meant to be
+    /// called as an auxiliary function.
+    pub fn mvf_as_points(mvf: &MultivaluedFloat, dimmensions: usize, k: usize) -> Vec<Point> {
+        if mvf.n_vars % dimmensions != k {
+            panic!("Point could not be de-structured!");
+        }
 
-        // Flatten into a k*dimm vector
-        let mut flattened_clusters: Vec<f32> = Default::default();
+        let mut slices: Vec<&[f32]> = Default::default();
 
-        clusters.for_each(|cluster| {
-            cluster.iter().for_each(|val: &f32| {
-                flattened_clusters.push(*val);
-            });
-        });
+        for i in 0..k {
+            let slice = &mvf.get_vals()[i..(k + dimmensions)];
+            slices.push(slice);
+        }
 
-        return flattened_clusters;
+        let points: Vec<Point> = slices
+            .iter()
+            .map(|slice| Point::new(slice))
+            .collect::<Vec<Point>>();
+
+        return points;
     }
 }
 
-impl<'a> FitnessFunction<MultivaluedFloat> for Kmeans<'a> {
+impl<'a> FitnessFunction<'a, MultivaluedFloat> for Kmeans<'a> {
     // TODO: Should return Result<FitnessFunction>
-    fn get_closure(&self) -> &Box<dyn Fn(MultivaluedFloat) -> FitnessReturn> {
-        &self.fitness
+    fn get_closure(&self) -> &'a Box<dyn Fn(MultivaluedFloat) -> FitnessReturn> {
+        // self.fitness = Box::new(|mvf: MultivaluedFloat| {
+        // // Create points from mvf
+
+        // let centers = Kmeans::mvf_as_points(&mvf, self.dimmensions, self.k);
+        // 0.0
+        // });
+        // return &self.fitness;
+        unimplemented!();
     }
+
+    fn eval(&self, mvf: MultivaluedFloat) -> FitnessReturn {
+        0.0
+    }
+}
+
+fn distance_sum(
+    mvf: MultivaluedFloat,
+    dimmensions: usize,
+    k: usize,
+    space: &mut Space,
+) -> FitnessReturn {
+    let centers = Kmeans::mvf_as_points(&mvf, dimmensions, k);
+
+    0.0
 }

@@ -39,7 +39,7 @@ pub mod single_valued {
         }
     }
 
-    impl Candidate<isize> for IntegerCandidate {
+    impl<'a> Candidate<'a, isize> for IntegerCandidate {
         fn get_fitness(&self) -> Option<FitnessReturn> {
             self.fitness
         }
@@ -60,10 +60,11 @@ pub mod single_valued {
             return s;
         }
 
-        fn eval_fitness(&mut self, f: &Box<dyn Fn(isize) -> FitnessReturn>) -> FitnessReturn {
-            let self_int = self.get_integer_representation();
-            self.fitness = Some(f(self_int));
-            f(self_int)
+        fn eval_fitness(&mut self, f: &FitnessFunction<'a, isize>) -> FitnessReturn {
+            // let self_int = self.get_integer_representation();
+            // self.fitness = Some(f(self_int));
+            // f(self_int)
+            unimplemented!();
         }
 
         fn debug(&self) {
@@ -91,7 +92,7 @@ pub mod single_valued {
         }
     }
 
-    impl CandidateList<isize, isize> for IntegerCandidateList {
+    impl<'a> CandidateList<'a, isize, isize> for IntegerCandidateList {
         fn len(&self) -> usize {
             self.candidates.len()
         }
@@ -227,7 +228,7 @@ pub mod single_valued {
         }
 
         //Evaluates fitness for the whole candidate list
-        fn eval_fitness(&mut self, f: &Box<dyn Fn(isize) -> FitnessReturn>) {
+        fn eval_fitness(&mut self, f: &FitnessFunction<'a, isize>) {
             for candidate in &mut self.candidates {
                 candidate.eval_fitness(f);
             }
@@ -281,7 +282,7 @@ pub mod single_valued {
     }
 }
 pub mod multi_valued {
-    use super::super::traits::{Candidate, CandidateList};
+    use super::super::traits::{Candidate, CandidateList, FitnessFunction};
     use super::super::types::{FitnessReturn, MultivaluedFloat, MultivaluedInteger};
     use super::super::utils::*;
     use super::super::{Bounds, InternalState, OptimizeType, StopCondition};
@@ -306,7 +307,7 @@ pub mod multi_valued {
         }
     }
 
-    impl Candidate<MultivaluedFloat> for RCCandidate {
+    impl<'a> Candidate<'a, MultivaluedFloat> for RCCandidate {
         // Evalúa el valor de fitness de self.value, lo asigna en self.fitness
         // y lo regresa.
 
@@ -333,13 +334,10 @@ pub mod multi_valued {
         fn mutate(&mut self, opt_type: &OptimizeType) {
             ()
         }
-        fn eval_fitness(
-            &mut self,
-            f: &Box<dyn Fn(MultivaluedFloat) -> FitnessReturn>,
-        ) -> FitnessReturn {
-            let fit = f(self.vars.clone());
+        fn eval_fitness(&mut self, f: &FitnessFunction<'a, MultivaluedFloat>) -> FitnessReturn {
+            let fit = f.eval(self.vars.clone());
             self.fitness = Some(fit);
-            fit
+            return fit;
         }
     }
 
@@ -381,7 +379,7 @@ pub mod multi_valued {
 
     /// This implementation of a Single Precision Floating Point GA requires a lower and upper bound for every dimmension.
     /// it also requires the stoping condition to be a hard cycle count.
-    impl<'a> CandidateList<RCCandidate, MultivaluedFloat> for RCCList {
+    impl<'a> CandidateList<'a, RCCandidate, MultivaluedFloat> for RCCList {
         // Generates an initial vector of Random Candidates
         fn generate_initial_candidates(&mut self, requested: usize) {
             // Check if bounded
@@ -638,7 +636,7 @@ pub mod multi_valued {
         }
 
         //Evaluates fitness for the whole candidate list
-        fn eval_fitness(&mut self, f: &Box<dyn Fn(MultivaluedFloat) -> FitnessReturn>) {
+        fn eval_fitness(&mut self, f: &dyn FitnessFunction<'a, MultivaluedFloat>) {
             for c in &mut self.candidates {
                 c.eval_fitness(f);
             }
@@ -775,7 +773,7 @@ pub mod multi_valued {
         }
     }
 
-    impl<'a> Candidate<MultivaluedInteger> for MultivaluedIntCandidate {
+    impl<'a> Candidate<'a, MultivaluedInteger> for MultivaluedIntCandidate {
         // Evalúa el valor de fitness de self.value, lo asigna en self.fitness
         // y lo regresa.
 
@@ -793,14 +791,15 @@ pub mod multi_valued {
 
         fn eval_fitness(
             &mut self,
-            f: &Box<dyn Fn(MultivaluedInteger) -> FitnessReturn>,
+            f: &dyn FitnessFunction<'a, MultivaluedInteger>,
         ) -> FitnessReturn {
             //FIXME: Clone?
             // let v: MultivaluedInteger = self.vars.clone();
-            let f = f(self.vars.clone());
+            // let f = f(self.vars.clone());
 
-            self.fitness = Some(f);
-            return f;
+            // self.fitness = Some(f);
+            // return f;
+            unimplemented!();
         }
 
         fn get_fitness(&self) -> Option<FitnessReturn> {
@@ -810,6 +809,8 @@ pub mod multi_valued {
             println!("{}", self.to_string());
         }
         fn mutate(&mut self, opt_type: &OptimizeType) {
+            // At this point, the vector should be brand new and not related to the Points in Space
+            // in any way.
             let weights = [1.0; 32];
             let pos = roulette(&weights) as usize;
             let mut new_val = String::new();
@@ -863,7 +864,7 @@ pub mod multi_valued {
         }
     }
 
-    impl CandidateList<MultivaluedIntCandidate, MultivaluedInteger> for MVICandidateList {
+    impl<'a> CandidateList<'a, MultivaluedIntCandidate, MultivaluedInteger> for MVICandidateList {
         // Generates an initial vector of Random Candidates
         fn generate_initial_candidates(&mut self, requested: usize) {
             for i in 0..=requested {
@@ -1007,7 +1008,7 @@ pub mod multi_valued {
         }
 
         //Evaluates fitness for the whole candidate list
-        fn eval_fitness(&mut self, f: &Box<dyn Fn(MultivaluedInteger) -> FitnessReturn>) {
+        fn eval_fitness(&mut self, f: &FitnessFunction<'a, MultivaluedInteger>) {
             //FIXME: Agregar un genérico en la definición del trait, diferente a candidate
             for candidate in &mut self.candidates {
                 candidate.eval_fitness(f);

@@ -1,5 +1,5 @@
 use super::super::genetic::implementations::multi_valued::{RCCList, RCCandidate};
-use super::super::genetic::traits::{Candidate, CandidateList};
+use super::super::genetic::traits::{Candidate, CandidateList, FitnessFunction};
 use super::super::genetic::types::{FitnessReturn, MultivaluedFloat};
 use super::super::genetic::utils::random_range;
 use super::super::genetic::{InternalState, OptimizeType, StopCondition};
@@ -29,7 +29,7 @@ impl<'a> ClusterList<'a> {
     }
 }
 
-impl<'a> CandidateList<RCCandidate, MultivaluedFloat> for ClusterList<'a> {
+impl<'a> CandidateList<'a, RCCandidate, MultivaluedFloat> for ClusterList<'a> {
     // impl CandidateList<RCCandidate, MultivaluedFloat> for ClusterList {
     fn generate_initial_candidates(&mut self, requested: usize) {
         // Get k random points from space_ref requested times
@@ -74,7 +74,7 @@ impl<'a> CandidateList<RCCandidate, MultivaluedFloat> for ClusterList<'a> {
     }
 
     //Evaluates fitness for the whole candidate list
-    fn eval_fitness(&mut self, f: &Box<dyn Fn(MultivaluedFloat) -> FitnessReturn>) {}
+    fn eval_fitness(&mut self, f: &FitnessFunction<'a, MultivaluedFloat>) {}
 
     // fn get_fittest(&self, opt_type: &OptimizeType) -> &dyn Candidate<T>;
 

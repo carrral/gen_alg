@@ -4,11 +4,11 @@ use super::utils::debug_msg;
 use super::{InternalState, OptimizeType, StopCondition};
 use gnuplot::{Caption, Color, Figure};
 
-pub fn genetic_optimize<T, U: Clone>(
+pub fn genetic_optimize<'a, T, U: Clone + 'a>(
     n: usize, // Tamaño de la población inicial
     selected_per_round: usize,
-    candidates: &mut impl CandidateList<T, U>,
-    fitness_fn: impl FitnessFunction<U>, // Función de adaptación
+    candidates: &mut impl CandidateList<'a, T, U>,
+    fitness_fn: impl FitnessFunction<'a, U>, // Función de adaptación
     mating_pr: f32,
     mut_pr: f32,
     opt: &OptimizeType, // MAX/MIN
@@ -47,7 +47,7 @@ pub fn genetic_optimize<T, U: Clone>(
 
     // Generate initial round of candidates
     candidates.generate_initial_candidates(n);
-    candidates.eval_fitness(&fitness_fn.get_closure());
+    candidates.eval_fitness(&fitness_fn);
 
     let tup = candidates.get_diagnostics(opt);
     fitness_over_time_y.push(tup.0);
@@ -90,7 +90,7 @@ pub fn genetic_optimize<T, U: Clone>(
         candidates.mate(n, selected_per_round, mating_pr, opt);
         candidates.mutate_list(mut_pr, opt);
 
-        candidates.eval_fitness(&fitness_fn.get_closure());
+        candidates.eval_fitness(&fitness_fn);
 
         // Update stats
         let tup = candidates.get_diagnostics(opt);
