@@ -3,7 +3,7 @@ use super::super::genetic::Bounds;
 use super::cluster::Cluster;
 use super::point::Point;
 
-pub type Center<'a> = Point<'a>;
+pub type Center<'a> = Point;
 // pub type Center = Point;
 
 // pub struct Cluster<'a> {
@@ -32,17 +32,18 @@ pub type Center<'a> = Point<'a>;
 // }
 // }
 
-pub struct Space<'b> {
-    clusters: Option<Vec<Cluster<'b>>>,
+// pub struct Space {
+pub struct Space {
+    clusters: Option<Vec<Cluster>>,
     dimmensions: usize,
-    pub points: Vec<Point<'b>>,
+    pub points: Vec<Point>,
 
     /// Only set to true after all points have been tagged and clustered.
     tagged: bool,
 }
 
-impl<'b> Space<'b> {
-    fn new(points: Vec<Point<'b>>, dimmensions: usize) -> Self {
+impl Space {
+    fn new(points: Vec<Point>, dimmensions: usize) -> Self {
         points.iter().for_each(|p| {
             if p.len() != dimmensions {
                 panic!("All points must be of dimmension {}", dimmensions);
@@ -65,7 +66,7 @@ impl<'b> Space<'b> {
     /// The actual max and min values will get cached once calculated as the point objects don't
     /// change over the program's lifetime.
     pub fn get_bounds<'p>(
-        points: &'p Vec<&Point<'b>>,
+        points: &'p Vec<&Point>,
         dimmensions: usize,
     ) -> Result<Bounds<MultivaluedFloat>, String> {
         if points.len() == 0 {

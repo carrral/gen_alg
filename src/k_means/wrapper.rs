@@ -14,7 +14,7 @@ pub struct ClusterList<'a> {
     k: usize,
     dimmensions: usize,
     ///Space struct whose points will be used for initializing candidates
-    space_ref: &'a Space<'a>,
+    space_ref: &'a Space,
 }
 
 impl<'a> ClusterList<'a> {
@@ -27,7 +27,6 @@ impl<'a> ClusterList<'a> {
             space_ref,
         }
     }
-
 }
 
 impl<'a> CandidateList<'a, RCCandidate, MultivaluedFloat> for ClusterList<'a> {

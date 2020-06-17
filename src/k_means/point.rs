@@ -1,18 +1,19 @@
 #[derive(Clone)]
 // #[derive(Copy)]
-pub struct Point<'a> {
-    values: &'a [f32],
+// pub struct Point<'a> {
+pub struct Point {
+    values: Vec<f32>,
     id: Option<usize>,
 }
 
-impl<'a> Point<'a> {
-    // impl Point {
-    pub fn new(values: &'a [f32]) -> Self {
+/// Read-Only, internal representation of a point in Space
+impl Point {
+    pub fn new(values: Vec<f32>) -> Self {
         Point { values, id: None }
     }
 
-    pub fn get_values(&self) -> &[f32] {
-        self.values
+    pub fn get_values(&self) -> &Vec<f32> {
+        &self.values
     }
 
     pub fn len(&self) -> usize {
@@ -63,17 +64,12 @@ pub mod tests {
 
     #[test]
     fn test_euclidian_distance() {
-        let mut v1 = vec![7.0, 11.0];
-        let mut v2 = vec![40.0, -27.0];
-        let p1: Point = Point::new(&v1[..]);
-        let p2: Point = Point::new(&v2[..]);
+        let v1 = vec![7.0, 11.0];
+        let v2 = vec![40.0, -27.0];
+        let p1: Point = Point::new(v1);
+        let p2: Point = Point::new(v2);
 
         assert!((p1.dist_euclidian(&p2).unwrap() - 50.32).abs() <= 0.01);
-
-        v1[0] = 0.0;
-        v1[1] = -4.0;
-        v2[0] = 8.0;
-        v2[1] = 100.0;
 
         // assert!((p1.dist_euclidian(&p2).unwrap() - 104.3072).abs() <= 0.01);
     }

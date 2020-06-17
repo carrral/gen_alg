@@ -18,17 +18,17 @@ use std::fmt;
 use utils::{gen_id_list, gen_plot_settings};
 use wrapper::ClusterList;
 
-struct Kmeans<'a> {
-    space: Space<'a>,
+struct Kmeans {
+    space: Space,
     k: usize,
     dimmensions: usize,
 }
 
-impl<'a> Kmeans<'a> {
+impl Kmeans {
     pub fn new(
         k: usize,
         dimmensions: usize,
-        space: Space<'a>,
+        space: Space,
         fitness: Box<dyn Fn(MultivaluedFloat) -> FitnessReturn>,
     ) -> Self {
         Kmeans {
@@ -54,7 +54,7 @@ impl<'a> Kmeans<'a> {
 
         let points: Vec<Point> = slices
             .iter()
-            .map(|slice| Point::new(slice))
+            .map(|slice| Point::new(slice.to_vec()))
             .collect::<Vec<Point>>();
 
         return points;
@@ -63,7 +63,7 @@ impl<'a> Kmeans<'a> {
     /// Meant to be called after genetic_optimize.
     /// After the algorithm has found the actual result,
     /// this method will tag each point accordingly
-    pub fn cluster(&mut self, mvf: MultivaluedFloat) -> Result<&'a Space, String> {
+    pub fn cluster<'a>(&'a mut self, mvf: MultivaluedFloat) -> Result<&'a Space, String> {
         let ids = gen_id_list(self.k);
         let mut unique_settings = gen_plot_settings(self.k)?;
         let mut centers = Kmeans::mvf_as_points(&mvf, self.dimmensions, self.k);
@@ -128,11 +128,11 @@ impl<'a> Kmeans<'a> {
         return Ok(self.get_space());
     }
 
-    pub fn get_space<'b>(&'b mut self) -> &'b mut Space<'a> {
+    pub fn get_space<'b>(&'b mut self) -> &'b mut Space {
         &mut self.space
     }
 
-    pub fn make_figure(&'a mut self) -> Result<Figure, String> {
+    pub fn make_figure<'a>(&'a mut self) -> Result<Figure, String> {
         let dimm = self.dimmensions;
 
         if dimm > 3 {
@@ -211,7 +211,7 @@ impl<'a> Kmeans<'a> {
     }
 }
 
-impl<'a> FitnessFunction<'a, MultivaluedFloat> for Kmeans<'a> {
+impl<'a> FitnessFunction<'a, MultivaluedFloat> for Kmeans {
     // TODO: Should return Result<FitnessFunction>
 
     fn eval(&self, mvf: MultivaluedFloat) -> FitnessReturn {
