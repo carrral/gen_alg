@@ -2,13 +2,13 @@ use super::traits::{CandidateList, FitnessFunction};
 use super::types::FitnessReturn;
 use super::utils::debug_msg;
 use super::{InternalState, OptimizeType, StopCondition};
-use gnuplot::{Caption, Color, Figure};
+use gnuplot::{Caption, Color, Figure, PointSymbol};
 
 pub fn genetic_optimize<'a, T, U: Clone + 'a>(
     n: usize, // Tamaño de la población inicial
     selected_per_round: usize,
     candidates: &mut impl CandidateList<'a, T, U>,
-    fitness_fn: impl FitnessFunction<'a, U>, // Función de adaptación
+    fitness_fn: &impl FitnessFunction<'a, U>, // Función de adaptación
     mating_pr: f32,
     mut_pr: f32,
     opt: &OptimizeType, // MAX/MIN
@@ -47,7 +47,7 @@ pub fn genetic_optimize<'a, T, U: Clone + 'a>(
 
     // Generate initial round of candidates
     candidates.generate_initial_candidates(n);
-    candidates.eval_fitness(&fitness_fn);
+    candidates.eval_fitness(fitness_fn);
 
     let tup = candidates.get_diagnostics(opt);
     fitness_over_time_y.push(tup.0);
@@ -90,7 +90,7 @@ pub fn genetic_optimize<'a, T, U: Clone + 'a>(
         candidates.mate(n, selected_per_round, mating_pr, opt);
         candidates.mutate_list(mut_pr, opt);
 
-        candidates.eval_fitness(&fitness_fn);
+        candidates.eval_fitness(fitness_fn);
 
         // Update stats
         let tup = candidates.get_diagnostics(opt);
@@ -137,7 +137,7 @@ pub fn genetic_optimize<'a, T, U: Clone + 'a>(
                 String::from("Éxito mostrando la gráfica de fitness"),
                 debug_value,
             ),
-            Err(m) => debug_msg(String::from("Error al iniciar GNUPlot"), debug_value),
+            Err(m) => println!("{}", m),
         };
         let g = avg_fitness_over_time.show();
 

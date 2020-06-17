@@ -6,15 +6,16 @@
 pub mod genetic;
 pub mod k_means;
 pub mod test_functions;
-
 use genetic::algorithms::genetic_optimize;
 use genetic::types::{FitnessReturn, MultivaluedFloat};
 use genetic::{implementations, OptimizeType, StopCondition};
+// use gnuplot::AxesCommon;
+use gnuplot::{AutoOption, AxesCommon, Caption, Color, Figure, PointSymbol};
 use implementations::multi_valued::RCCList;
 use rand::{distributions::WeightedIndex, prelude::*, Rng};
 use test_functions::Rosenbrock;
 
-fn main() {
+fn main2() {
     let mut mvfl = RCCList::new(2);
     let lower_bound = MultivaluedFloat::new(2, vec![-2.0, -2.0]);
     let upper_bound = MultivaluedFloat::new(2, vec![2.0, 2.0]);
@@ -25,13 +26,13 @@ fn main() {
         1000,
         300,
         &mut mvfl,
-        Rosenbrock::new(),
+        &Rosenbrock::new(),
         0.6,
         0.1,
         &OptimizeType::MIN,
         &StopCondition::CYCLES(100),
-        false,
-        false,
+        true,
+        true,
     );
 
     match results {
@@ -42,6 +43,9 @@ fn main() {
             println!("Error: {}", s);
         }
     }
+}
+
+fn main() {
 }
 
 #[cfg(test)]

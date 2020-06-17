@@ -27,10 +27,10 @@ impl<'a> ClusterList<'a> {
             space_ref,
         }
     }
+
 }
 
 impl<'a> CandidateList<'a, RCCandidate, MultivaluedFloat> for ClusterList<'a> {
-    // impl CandidateList<RCCandidate, MultivaluedFloat> for ClusterList {
     fn generate_initial_candidates(&mut self, requested: usize) {
         // Get k random points from space_ref requested times
         for i in 0..requested {
@@ -74,7 +74,9 @@ impl<'a> CandidateList<'a, RCCandidate, MultivaluedFloat> for ClusterList<'a> {
     }
 
     //Evaluates fitness for the whole candidate list
-    fn eval_fitness(&mut self, f: &FitnessFunction<'a, MultivaluedFloat>) {}
+    fn eval_fitness(&mut self, f: &dyn FitnessFunction<'a, MultivaluedFloat>) {
+        self.list.eval_fitness(f);
+    }
 
     // fn get_fittest(&self, opt_type: &OptimizeType) -> &dyn Candidate<T>;
 

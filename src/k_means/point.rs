@@ -1,14 +1,14 @@
-// #[derive(Clone)]
+#[derive(Clone)]
 // #[derive(Copy)]
 pub struct Point<'a> {
     values: &'a [f32],
-    tag: Option<char>,
+    id: Option<usize>,
 }
 
 impl<'a> Point<'a> {
     // impl Point {
     pub fn new(values: &'a [f32]) -> Self {
-        Point { values, tag: None }
+        Point { values, id: None }
     }
 
     pub fn get_values(&self) -> &[f32] {
@@ -36,8 +36,20 @@ impl<'a> Point<'a> {
         Ok(sum.sqrt())
     }
 
+    pub fn nth_value(&self, n: usize) -> f32 {
+        self.values[n]
+    }
+
     pub fn to_string(&self) -> String {
         format!("Point({:?})", self.get_values())
+    }
+
+    pub fn set_id(&mut self, id: usize) {
+        self.id = Some(id);
+    }
+
+    pub fn get_id(&self) -> usize {
+        self.id.unwrap()
     }
 
     // pub fn set_values(&mut self, values: &'a [f32]) {

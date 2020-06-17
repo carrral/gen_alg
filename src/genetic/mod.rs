@@ -72,6 +72,14 @@ impl Bounds<MultivaluedFloat> {
 
         return v >= lower && v <= upper;
     }
+
+    pub fn get_nth_upper(&self, n: usize) -> f32 {
+        self.upper.get_vals()[n]
+    }
+
+    pub fn get_nth_lower(&self, n: usize) -> f32 {
+        self.lower.get_vals()[n]
+    }
 }
 
 pub struct InternalState {

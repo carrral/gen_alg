@@ -5,6 +5,7 @@
 * Implementación de StopCondition::ERROR_MARGIN
 * Error Handling
 * Mandar función bin -> uint a wrapper
+* Añadir benchmarks para optimizar velocidad.
 
 ## Changelog
 
