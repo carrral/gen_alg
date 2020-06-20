@@ -42,7 +42,7 @@ impl<'a> CandidateList<'a, RCCandidate, MultivaluedFloat> for ClusterList<'a> {
             // Accumulate point's values into  a k * dimm vector
             let mut init_vector: Vec<f32> = Vec::with_capacity(self.k * self.dimmensions);
             for index in random_points_index.iter() {
-                let selected_center: &Point = &self.space_ref.points[i];
+                let selected_center: &Point = &self.space_ref.get_points()[*index];
                 for value in selected_center.get_values() {
                     init_vector.push(*value);
                 }

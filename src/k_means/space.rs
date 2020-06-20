@@ -43,7 +43,7 @@ pub struct Space {
 }
 
 impl Space {
-    fn new(points: Vec<Point>, dimmensions: usize) -> Self {
+    pub fn new(points: Vec<Point>, dimmensions: usize) -> Self {
         points.iter().for_each(|p| {
             if p.len() != dimmensions {
                 panic!("All points must be of dimmension {}", dimmensions);
@@ -116,6 +116,10 @@ impl Space {
         Ok(Bounds::new(lower, upper))
     }
 
+    pub fn set_clusters(&mut self, clusters: Vec<Cluster>) {
+        self.clusters = Some(clusters);
+    }
+
     pub fn len(&self) -> usize {
         self.points.len()
     }
@@ -126,29 +130,24 @@ impl Space {
 
     pub fn into_ref_list<'s>(&'s mut self) -> Vec<&Point> {
         // If already tagged and clustered, flatten points
-        match self.get_clusters() {
-            Some(clusters) => {
-                let flattened_clusters = {
-                    let mut _flattened: Vec<&Point> = vec![];
-                    clusters.iter().for_each(|c| {
-                        c.get_points().iter().for_each(|p| {
-                            _flattened.push(p);
-                        });
+        //
+
+        if self.get_clusters().is_some() {
+            let clusters = self.get_clusters().unwrap();
+            let flattened_clusters = {
+                let mut _flattened: Vec<&Point> = vec![];
+                clusters.iter().for_each(|c| {
+                    c.get_points().iter().for_each(|p| {
+                        _flattened.push(p);
                     });
-                    _flattened
-                };
-            }
+                });
+                _flattened
+            };
 
-            None => {
-                // Space not tagged yet.
-                if self.is_tagged() {
-                    panic!("Error in code!, this state should not be reachable");
-                }
-
-                return self.get_points().iter().collect::<Vec<&Point>>();
-            }
+            return flattened_clusters;
+        } else {
+            return self.get_points().iter().collect::<Vec<&Point>>();
         }
-        unimplemented!();
     }
 
     pub fn is_tagged(&self) -> bool {

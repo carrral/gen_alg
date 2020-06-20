@@ -1,10 +1,12 @@
 use super::point::Point;
 
+#[derive(std::fmt::Debug)]
 pub enum PlotSettings {
     /// Stores (graph_char, hex)
     Pair(char, String),
 }
 
+#[derive(std::fmt::Debug)]
 /// Stores a list of Points,
 // pub struct Cluster<'a> {
 pub struct Cluster {

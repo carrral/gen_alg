@@ -1,6 +1,4 @@
-#[derive(Clone)]
-// #[derive(Copy)]
-// pub struct Point<'a> {
+#[derive(Clone, std::fmt::Debug)]
 pub struct Point {
     values: Vec<f32>,
     id: Option<usize>,
@@ -20,9 +18,13 @@ impl Point {
         self.values.len()
     }
 
-    pub fn dist_euclidian(&self, point: &Point) -> Result<f32, &str> {
+    pub fn dist_euclidian(&self, point: &Point) -> Result<f32, String> {
         if self.len() != point.len() {
-            return Err("Error: Dimmension mismatch!");
+            return Err(format!(
+                "Error: Dimmension mismatch! Expected {}, got {}",
+                self.len(),
+                point.len()
+            ));
         }
 
         let mut sum: f32 = 0.0;
@@ -70,7 +72,5 @@ pub mod tests {
         let p2: Point = Point::new(v2);
 
         assert!((p1.dist_euclidian(&p2).unwrap() - 50.32).abs() <= 0.01);
-
-        // assert!((p1.dist_euclidian(&p2).unwrap() - 104.3072).abs() <= 0.01);
     }
 }

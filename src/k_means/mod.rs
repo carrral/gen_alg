@@ -8,6 +8,7 @@ use super::genetic::implementations::multi_valued::RCCList;
 use super::genetic::traits::FitnessFunction;
 use super::genetic::types::FitnessReturn;
 use super::genetic::types::MultivaluedFloat;
+use super::genetic::utils::debug_msg;
 use super::genetic::utils::random_range;
 use cluster::{Cluster, PlotSettings};
 use gnuplot::{AutoOption, AxesCommon, Caption, Color, Figure, PointSymbol};
@@ -18,19 +19,14 @@ use std::fmt;
 use utils::{gen_id_list, gen_plot_settings};
 use wrapper::ClusterList;
 
-struct Kmeans {
+pub struct Kmeans {
     space: Space,
     k: usize,
     dimmensions: usize,
 }
 
 impl Kmeans {
-    pub fn new(
-        k: usize,
-        dimmensions: usize,
-        space: Space,
-        fitness: Box<dyn Fn(MultivaluedFloat) -> FitnessReturn>,
-    ) -> Self {
+    pub fn new(k: usize, dimmensions: usize, space: Space) -> Self {
         Kmeans {
             space,
             k,
@@ -41,14 +37,14 @@ impl Kmeans {
     /// Structures a mvf as a list of points so dist_euclidian can be applied to each. Meant to be
     /// called as an auxiliary function.
     pub fn mvf_as_points(mvf: &MultivaluedFloat, dimmensions: usize, k: usize) -> Vec<Point> {
-        if mvf.n_vars % dimmensions != k {
+        if !(mvf.n_vars % dimmensions == 0 && mvf.n_vars / dimmensions == k) {
             panic!("Point could not be de-structured!");
         }
 
         let mut slices: Vec<&[f32]> = Default::default();
 
         for i in 0..k {
-            let slice = &mvf.get_vals()[i..(k + dimmensions)];
+            let slice = &mvf.get_vals()[(i * dimmensions)..(i * dimmensions + dimmensions)];
             slices.push(slice);
         }
 
@@ -101,7 +97,9 @@ impl Kmeans {
         let mut clusters: Vec<Cluster> = Default::default();
 
         for i in 0..centers.len() {
-            let point = centers.remove(i);
+            // let point = centers.remove(i);
+            let point = centers[i].to_owned();
+            // println!("len: {}", centers.len());
             let mut cluster = Cluster::new(point);
             let settings = unique_settings.remove(i);
             cluster.set_plot_settings(settings);
@@ -117,7 +115,7 @@ impl Kmeans {
         // Iterate through points and  filter with id
         // Add to cluster
         for i in 0..self.space.len() {
-            let point = self.space.points.remove(i);
+            let point = self.space.points[i].to_owned();
             let option = clusters_id_map.get_mut(&point.get_id());
             match option {
                 Some(cluster) => cluster.add_point(point.into()),
@@ -125,11 +123,17 @@ impl Kmeans {
             }
         }
 
+        self.get_space_mut().set_clusters(clusters);
+
         return Ok(self.get_space());
     }
 
-    pub fn get_space<'b>(&'b mut self) -> &'b mut Space {
+    pub fn get_space_mut<'b>(&'b mut self) -> &'b mut Space {
         &mut self.space
+    }
+
+    pub fn get_space<'b>(&'b self) -> &'b Space {
+        &self.space
     }
 
     pub fn make_figure<'a>(&'a mut self) -> Result<Figure, String> {
@@ -139,10 +143,10 @@ impl Kmeans {
             return Err("Display impossible for dimmensions > 3".to_string());
         }
 
-        let mut global_res: Result<Figure, String> = Err("Unexpected return occurred".to_string());
+        let global_res: Result<Figure, String> = Err("Unexpected return occurred".to_string());
 
         let mut figure = Figure::new();
-        let points = self.get_space().into_ref_list();
+        let points = self.get_space_mut().into_ref_list();
 
         // Get bounds of flattened clusters
         let bounds;
@@ -151,7 +155,7 @@ impl Kmeans {
             Err(e) => return Err(e),
         }
 
-        match self.get_space().get_clusters() {
+        match self.get_space_mut().get_clusters() {
             Some(clusters) => {
                 match dimm {
                     1 => return Err("Display of dim=1 not supported yet!".to_string()),
@@ -173,6 +177,8 @@ impl Kmeans {
                             // Get x values
                             // Get y values
                             // Get PlotSettings
+                            //
+
                             let (mut x, mut y): (Vec<f32>, Vec<f32>) = Default::default();
                             c.get_points().iter().for_each(|p: &Point| {
                                 let _x = p.nth_value(0);
@@ -181,33 +187,31 @@ impl Kmeans {
                                 y.push(_y);
                             });
 
-                            let mut plot_setts: &PlotSettings =
-                                &PlotSettings::Pair('*', "000000".to_string());
+                            // println!("{:?},{:?}", c, x);
+
                             match c.get_plot_settings() {
-                                Some(ps) => plot_setts = ps,
-                                None => {
-                                    global_res =
-                                        Err("Plot settings not defined for clusters".to_string())
-                                }
+                                Some(ps) => match ps {
+                                    PlotSettings::Pair(c, h) => {
+                                        // println!("{:?}", h);
+                                        figure.axes2d().points(
+                                            &x,
+                                            &y,
+                                            &[PointSymbol(*c), Color(&*format!("#{}", h))],
+                                        );
+                                    }
+                                },
+                                None => unreachable!(),
                             }
-
-                            let (graph_char, hex) = match plot_setts {
-                                PlotSettings::Pair(c, h) => (c, h),
-                            };
-
-                            figure
-                                .axes2d()
-                                .points(&x, &y, &[PointSymbol(*graph_char), Color(hex)]);
                         });
+
+                        return Ok(figure);
                     }
-                    3 => global_res = Err("3-D space not supported yet!".to_string()),
+                    3 => return Err("3-D space not supported yet!".to_string()),
                     _ => unreachable!(),
                 }
             }
             None => return Err("Space has not been tagged yet".to_string()),
         }
-
-        unimplemented!();
     }
 }
 
@@ -216,10 +220,11 @@ impl<'a> FitnessFunction<'a, MultivaluedFloat> for Kmeans {
 
     fn eval(&self, mvf: MultivaluedFloat) -> FitnessReturn {
         let centers = Kmeans::mvf_as_points(&mvf, self.dimmensions, self.k);
+
         // Find the closest custer center for each point
 
         let mut sum = 0.0;
-        self.space.points.iter().for_each(|point| {
+        self.space.get_points().iter().for_each(|point| {
             let mut _min_dist = std::f32::MAX;
 
             centers.iter().for_each(|center: &Point| {

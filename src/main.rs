@@ -5,15 +5,34 @@
 
 pub mod genetic;
 pub mod k_means;
+pub mod plot;
 pub mod test_functions;
 use genetic::algorithms::genetic_optimize;
 use genetic::types::{FitnessReturn, MultivaluedFloat};
 use genetic::{implementations, OptimizeType, StopCondition};
-// use gnuplot::AxesCommon;
 use gnuplot::{AutoOption, AxesCommon, Caption, Color, Figure, PointSymbol};
 use implementations::multi_valued::RCCList;
+use k_means::space::Space;
+use k_means::utils::gen_random_points;
+use k_means::wrapper::ClusterList;
+use k_means::Kmeans;
+use matplotlib::{Env, Plot};
+use plot::Plot2D;
 use rand::{distributions::WeightedIndex, prelude::*, Rng};
+use std::io::Write;
 use test_functions::Rosenbrock;
+
+fn main4() {
+    write!(&mut std::io::stdout(), "{}", 'a');
+    write!(&mut std::io::stdout(), "{}", 'b');
+}
+fn main() {
+    // let points =  gen_random_points(
+    let mut plot = Plot2D::new();
+    plot.set_x_range(-100.0, 100.0, 10.0).unwrap();
+    plot.set_y_range(-100.0, 100.0, 10.0).unwrap();
+    plot.draw(&mut std::io::stdout()).unwrap();
+}
 
 fn main2() {
     let mut mvfl = RCCList::new(2);
@@ -45,7 +64,36 @@ fn main2() {
     }
 }
 
-fn main() {
+fn main3() {
+    let random_points = gen_random_points(2, 20, (-500.0, 500.0));
+    println!("{:?}", random_points);
+
+    let space = Space::new(random_points, 2);
+
+    let mut k_means = Kmeans::new(5, 2, space);
+
+    let mut cluster_list = ClusterList::new(5, 2, k_means.get_space());
+    let result = genetic_optimize(
+        20,
+        5,
+        &mut cluster_list,
+        &k_means,
+        0.6,
+        0.2,
+        &OptimizeType::MIN,
+        &StopCondition::CYCLES(10),
+        true,
+        false,
+    );
+
+    let space;
+
+    match result {
+        Ok((val, fit)) => space = k_means.cluster(val),
+        Err(e) => println!("{}", e),
+    }
+
+    let figure = k_means.make_figure().unwrap().show();
 }
 
 #[cfg(test)]
