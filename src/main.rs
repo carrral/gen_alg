@@ -23,14 +23,17 @@ use std::io::Write;
 use test_functions::Rosenbrock;
 
 fn main4() {
-    write!(&mut std::io::stdout(), "{}", 'a');
-    write!(&mut std::io::stdout(), "{}", 'b');
+    // fn main() {
+    // println!("{}", 135 / 2 as usize);
 }
+// fn main4() {
 fn main() {
     // let points =  gen_random_points(
     let mut plot = Plot2D::new();
     plot.set_x_range(-100.0, 100.0, 10.0).unwrap();
     plot.set_y_range(-100.0, 100.0, 10.0).unwrap();
+    plot.set_point((10.0, 10.0), 'x').unwrap();
+    plot.set_point((9.0, 10.0), '.').unwrap();
     plot.draw(&mut std::io::stdout()).unwrap();
 }
 
@@ -104,7 +107,7 @@ mod tests {
     use genetic::implementations::single_valued::IntegerCandidateList;
     use genetic::utils;
     use genetic::InternalState;
-
+    use plot::Plot2D;
     fn setup() -> IntegerCandidateList {
         let vals = ["0001", "0000", "0010", "0011"];
         let mut cl = IntegerCandidateList::default();
@@ -113,6 +116,17 @@ mod tests {
             cl.candidates.push(c);
         }
         return cl;
+    }
+
+    #[test]
+    fn test_maps() {
+        let a = [[1, 2, 3], [4, 5, 6], [7, 8, 9]];
+        assert_eq!(a[0][0], 1);
+        assert_eq!(a[0][1], 2);
+        assert_eq!(a[2][0], 7);
+
+        // let mapped = Plot2D::map(37, (0, 135), (-100, 100)).unwrap();
+        // assert_eq!(-63, mapped);
     }
 
     #[test]

@@ -1,5 +1,5 @@
-const COLUMNS: usize = 90;
-const ROWS: usize = 35;
+const COLUMNS: usize = 140;
+const ROWS: usize = 40;
 const BLANK: char = ' ';
 
 pub struct Plot2D {
@@ -41,12 +41,7 @@ impl Plot2D {
             self.x_range = Some((min, max));
 
             // Normalize x step
-            self.x_equ_step = Self::map(
-                step as isize,
-                (min as isize, max as isize),
-                (0, COLUMNS as isize),
-            )
-            .unwrap() as usize;
+            self.x_equ_step = Self::map(step, (min, max), (0f32, COLUMNS as f32)).unwrap() as usize;
 
             if self.y_range.is_some() {
                 self.displayable = true;
@@ -68,12 +63,7 @@ impl Plot2D {
             self.y_range = Some((min, max));
 
             // Normalize y step
-            self.y_equ_step = Self::map(
-                step as isize,
-                (min as isize, max as isize),
-                (0, ROWS as isize),
-            )
-            .unwrap() as usize;
+            self.y_equ_step = Self::map(step, (min, max), (0.0, ROWS as f32)).unwrap() as usize;
 
             if self.x_range.is_some() {
                 self.displayable = true;
@@ -83,25 +73,59 @@ impl Plot2D {
         }
     }
 
-    fn map_x<'k>(&'k self, x: f32) -> Result<isize, &str> {
+    /// Maps an x value to a valid [0,COLUMNS) value
+    fn map_x<'k>(&'k self, x: f32) -> Result<f32, &str> {
         let (x_min, x_max) = self.x_range.unwrap();
-        Self::map(
-            x as isize,
-            (x_min as isize, x_max as isize),
-            (0, COLUMNS as isize),
-        )
+
+        // Approximately where the y axis (x=0) is
+        // let center = COLUMNS / 2 as usize;
+        // println!("Center x: {}", center);
+
+        // Maps center from screen domain to x domain
+        // let mapped_center =
+        // Self::map(center as f32, (0.0, COLUMNS as f32), (x_min, x_max)).unwrap();
+        // println!("Mapped center x: {}", mapped_center);
+
+        // if x < mapped_center {
+        // Range x_min .. mapped_center
+        // map to 0 .. center
+        // Self::map(x, (mapped_center, x_min), (center as f32, 0.0))
+        // } else {
+        // Range  mapped_center .. x_max
+        // map to center .. COLUMNS
+        // Self::map(x, (mapped_center, x_max), (center as f32, COLUMNS as f32))
+        //
+
+        Self::map(x, (x_min, x_max), (0.0, COLUMNS as f32))
     }
 
-    fn map_y<'k>(&'k self, y: f32) -> Result<isize, &str> {
+    /// Maps a y value to a valid [0,ROWS) value
+    fn map_y<'k>(&'k self, y: f32) -> Result<f32, &str> {
         let (y_min, y_max) = self.y_range.unwrap();
-        Self::map(
-            y as isize,
-            (y_min as isize, y_max as isize),
-            (0, ROWS as isize),
-        )
+
+        let center = ROWS / 2 as usize;
+        println!("Center y: {}", center);
+
+        // Maps center from screen domain to y domain
+        let mapped_center = Self::map(center as f32, (0.0, ROWS as f32), (y_max, y_min)).unwrap();
+        println!("Mapped center y: {}", mapped_center);
+
+        if y < mapped_center {
+            // Range y_min .. mapped_center
+            // map to 0 .. center
+            Self::map(y, (y_min, mapped_center), (ROWS as f32, center as f32))
+        } else {
+            // Range  mapped_center .. y_may
+            // map to center .. ROWS
+            Self::map(y, (mapped_center, y_max), (center as f32, 0.0))
+        }
     }
 
-    fn set_point<'k>(&'k mut self, (x, y): (f32, f32), c: char) -> Result<&'k mut Plot2D, &str> {
+    pub fn set_point<'k>(
+        &'k mut self,
+        (x, y): (f32, f32),
+        c: char,
+    ) -> Result<&'k mut Plot2D, &str> {
         let mut _x = 0;
         let mut _y = 0;
 
@@ -118,8 +142,9 @@ impl Plot2D {
 
         let x_mapped = self.map_x(x).unwrap();
         let y_mapped = self.map_y(y).unwrap();
+        println!("({},{})", x_mapped, y_mapped);
 
-        self.point_matrix[x_mapped as usize][y_mapped as usize] = c;
+        self.point_matrix[y_mapped as usize][x_mapped as usize] = c;
 
         return Ok(self);
     }
@@ -143,7 +168,7 @@ impl Plot2D {
                 // }
 
                 if j == axis_y_row && i == axis_x_row {
-                    write!(file, "{}", '.').unwrap();
+                    write!(file, "{}", '|').unwrap();
                 }
                 if j == axis_y_row && i != axis_x_row {
                     write!(file, "{}", Self::VERT_SEP).unwrap();
@@ -152,6 +177,7 @@ impl Plot2D {
                     write!(file, "{}", Self::HOR_SEP).unwrap();
                 }
                 if i != axis_x_row && j != axis_y_row {
+                    // println!("({},{})", i, j);
                     write!(file, "{}", self.point_matrix[i][j]).unwrap();
                 }
 
@@ -165,23 +191,10 @@ impl Plot2D {
     }
 
     /// Returns a value between 0 and k
-    fn map<'w>(
-        val: isize,
-        (old_min, old_max): (isize, isize),
-        (new_min, new_max): (isize, isize),
-    ) -> Result<isize, &'w str> {
-        if val < old_min || val > old_max {
-            return Err("Value outside of range");
-        }
+    pub fn map<'w>(val: f32, from_range: (f32, f32), to_range: (f32, f32)) -> Result<f32, &'w str> {
+        let output = to_range.0
+            + (val - from_range.0) * (to_range.1 - to_range.0) / (from_range.1 - from_range.0);
 
-        let old_range = old_max - old_min;
-
-        if old_range == 0 {
-            Ok(new_min)
-        } else {
-            let new_range = new_max - new_min;
-            let new_val = ((val - old_min) * new_range) / old_range;
-            Ok(new_val)
-        }
+        Ok(output)
     }
 }
