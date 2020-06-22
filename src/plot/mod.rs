@@ -171,6 +171,8 @@ impl Plot2D {
         let (y_min_fmt, y_max_fmt): (String, String) =
             (format!("{:+.2e}", y_min), format!("{:+.2e}", y_max));
 
+        let x_tag_len = x_min_fmt.chars().count();
+
         let axis_x_row = ROWS / 2 as usize;
         let axis_y_row = COLUMNS / 2 as usize;
         let mut vert_step_counter = 0;
@@ -181,7 +183,7 @@ impl Plot2D {
         let padding = (COLUMNS / 2 as usize) - half_y_tag;
         let y_max_tag = format!(
             "{}{}{}",
-            BLANK.to_string().repeat(padding),
+            BLANK.to_string().repeat(padding + x_tag_len),
             y_max_fmt,
             BLANK.to_string().repeat(padding)
         );
@@ -190,31 +192,42 @@ impl Plot2D {
         let padding = (COLUMNS / 2 as usize) - half_y_tag;
         let y_min_tag = format!(
             "{}{}{}",
-            BLANK.to_string().repeat(padding),
+            BLANK.to_string().repeat(padding + x_tag_len),
             y_min_fmt,
             BLANK.to_string().repeat(padding)
         );
 
         writeln!(file, "{}", y_max_tag);
 
-        for i in 0..ROWS {
-            for j in 0..COLUMNS {
-                // if j == axis_y_row {
-                // vert_axis_flag = true;
-                // }
+        let mut x_tag_flag = false;
 
-                if j == axis_y_row && i == axis_x_row {
-                    write!(file, "{}", '|').unwrap();
-                }
-                if j == axis_y_row && i != axis_x_row {
-                    write!(file, "{}", Self::VERT_SEP).unwrap();
-                }
-                if i == axis_x_row && j != axis_y_row {
-                    write!(file, "{}", Self::HOR_SEP).unwrap();
-                }
-                if i != axis_x_row && j != axis_y_row {
-                    // println!("({},{})", i, j);
-                    write!(file, "{}", self.point_matrix[i][j]).unwrap();
+        for i in 0..ROWS {
+            for j in 0..(x_tag_len + COLUMNS) {
+                let j_equ = j as isize - (x_tag_len as isize);
+                if j < x_tag_len {
+                    if i == axis_x_row {
+                        if j == 0 && !x_tag_flag {
+                            write!(file, "{}", x_min_fmt).unwrap();
+                            x_tag_flag = true;
+                        }
+                    } else {
+                        write!(file, "{}", BLANK).unwrap();
+                    }
+                } else {
+                    let j_equ_u = j_equ as usize;
+                    if j_equ_u == axis_y_row && i == axis_x_row {
+                        write!(file, "{}", '|').unwrap();
+                    }
+                    if j_equ_u == axis_y_row && i != axis_x_row {
+                        write!(file, "{}", Self::VERT_SEP).unwrap();
+                    }
+                    if i == axis_x_row && j_equ_u != axis_y_row {
+                        write!(file, "{}", Self::HOR_SEP).unwrap();
+                    }
+                    if i != axis_x_row && j_equ_u != axis_y_row {
+                        // println!("({},{})", i, j_equ_u);
+                        write!(file, "{}", self.point_matrix[i][j_equ_u]).unwrap();
+                    }
                 }
 
                 vert_step_counter += 1;
