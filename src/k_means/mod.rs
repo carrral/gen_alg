@@ -102,7 +102,7 @@ impl Kmeans {
             let point = centers[i].to_owned();
             // println!("len: {}", centers.len());
             let mut cluster = Cluster::new(point);
-            let settings = unique_settings.remove(i);
+            let settings = unique_settings[i].clone();
             cluster.set_plot_settings(settings);
             clusters.push(cluster);
         }

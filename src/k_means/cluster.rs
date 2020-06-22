@@ -1,6 +1,6 @@
 use super::point::Point;
 
-#[derive(std::fmt::Debug)]
+#[derive(std::fmt::Debug, Clone)]
 pub enum PlotSettings {
     /// Stores (graph_char, hex)
     Pair(char, String),
