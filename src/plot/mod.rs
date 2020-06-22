@@ -162,12 +162,40 @@ impl Plot2D {
             return Err("2-D plot not displayable yet");
         }
 
+        let (x_min, x_max) = self.x_range.unwrap();
+        let (y_min, y_max) = self.y_range.unwrap();
+
+        // Format in scientific notation
+        let (x_min_fmt, x_max_fmt): (String, String) =
+            (format!("{:+.2e}", x_min), format!("{:+.2e}", x_max));
+        let (y_min_fmt, y_max_fmt): (String, String) =
+            (format!("{:+.2e}", y_min), format!("{:+.2e}", y_max));
+
         let axis_x_row = ROWS / 2 as usize;
         let axis_y_row = COLUMNS / 2 as usize;
         let mut vert_step_counter = 0;
         let mut hor_step_counter = 0;
-        // let mut hor_axis_flag = false;
-        // let mut vert_axis_flag = false;
+
+        // Print y+ tag
+        let mut half_y_tag = y_max_fmt.chars().count() / 2 as usize;
+        let padding = (COLUMNS / 2 as usize) - half_y_tag;
+        let y_max_tag = format!(
+            "{}{}{}",
+            BLANK.to_string().repeat(padding),
+            y_max_fmt,
+            BLANK.to_string().repeat(padding)
+        );
+        // Get y- tag
+        half_y_tag = y_min_fmt.chars().count() / 2 as usize;
+        let padding = (COLUMNS / 2 as usize) - half_y_tag;
+        let y_min_tag = format!(
+            "{}{}{}",
+            BLANK.to_string().repeat(padding),
+            y_min_fmt,
+            BLANK.to_string().repeat(padding)
+        );
+
+        writeln!(file, "{}", y_max_tag);
 
         for i in 0..ROWS {
             for j in 0..COLUMNS {
@@ -194,6 +222,8 @@ impl Plot2D {
             write!(file, "\n").unwrap();
             hor_step_counter += 1;
         }
+
+        writeln!(file, "{}", y_min_tag);
 
         Ok(())
     }

@@ -36,7 +36,7 @@ pub fn gen_plot_settings<'a>(k: usize) -> Result<Vec<PlotSettings>, &'a str> {
     ];
 
     const CHARS: [char; 14] = [
-        '.', '+', 'x', '*', 's', 'S', 'o', 'O', 't', 'T', 'd', 'D', 'r', 'R',
+        '.', '+', 'x', '*', '%', '#', '&', '~', 'a', 'b', 'c', 'd', 'e', 'f',
     ];
 
     if k > COLORS.len() {
