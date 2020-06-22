@@ -97,21 +97,41 @@ impl Space {
         // Get order of (x0,x1,...)
 
         let (lower_order, upper_order) = {
-            let _lower = min_vals.iter().map(|l| l.log10().floor() as i32);
-            let _upper = max_vals.iter().map(|u| u.log10().ceil() as i32);
+            let _lower = min_vals
+                .iter()
+                .map(|l| {
+                    if *l < 0.0 {
+                        (-l).log10().ceil() as i32
+                    } else {
+                        l.log10().floor() as i32
+                    }
+                })
+                .collect::<Vec<i32>>();
+            let _upper = max_vals
+                .iter()
+                .map(|u| u.log10().ceil() as i32)
+                .collect::<Vec<i32>>();
             (_lower, _upper)
         };
+        // println!("lower:{:?},upper:{:?}", lower_order, upper_order);
 
         // Get bounds for (x0,x1,...)
         let (lower, upper) = {
-            let _lower = lower_order.map(|l| 10f32.powi(l)).collect::<Vec<f32>>();
-            let _upper = upper_order.map(|u| 10f32.powi(u)).collect::<Vec<f32>>();
+            let _lower = lower_order
+                .iter()
+                .map(|l| -10f32.powi(*l))
+                .collect::<Vec<f32>>();
+            let _upper = upper_order
+                .iter()
+                .map(|u| 10f32.powi(*u))
+                .collect::<Vec<f32>>();
 
             (
                 MultivaluedFloat::new(dimmensions, _lower),
                 MultivaluedFloat::new(dimmensions, _upper),
             )
         };
+        // println!("lower:{:?},upper:{:?}", lower.get_vals(), upper.get_vals());
 
         Ok(Bounds::new(lower, upper))
     }

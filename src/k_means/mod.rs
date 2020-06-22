@@ -10,6 +10,7 @@ use super::genetic::types::FitnessReturn;
 use super::genetic::types::MultivaluedFloat;
 use super::genetic::utils::debug_msg;
 use super::genetic::utils::random_range;
+use super::plot::Plot2D;
 use cluster::{Cluster, PlotSettings};
 use gnuplot::{AutoOption, AxesCommon, Caption, Color, Figure, PointSymbol};
 use point::Point;
@@ -136,7 +137,7 @@ impl Kmeans {
         &self.space
     }
 
-    pub fn make_figure<'a>(&'a mut self) -> Result<Figure, String> {
+    pub fn make_plot<'a>(&'a mut self) -> Result<Plot2D, String> {
         let dimm = self.dimmensions;
 
         if dimm > 3 {
@@ -145,7 +146,7 @@ impl Kmeans {
 
         let global_res: Result<Figure, String> = Err("Unexpected return occurred".to_string());
 
-        let mut figure = Figure::new();
+        let mut figure = Plot2D::new();
         let points = self.get_space_mut().into_ref_list();
 
         // Get bounds of flattened clusters
@@ -163,45 +164,32 @@ impl Kmeans {
                         // Set bounds in figure
                         let (upper_x, upper_y) = (bounds.get_nth_upper(0), bounds.get_nth_upper(1));
                         let (lower_x, lower_y) = (bounds.get_nth_lower(0), bounds.get_nth_lower(1));
-                        figure.axes2d().set_x_range(
-                            AutoOption::<f64>::Fix(lower_x as f64),
-                            AutoOption::<f64>::Fix(upper_x as f64),
-                        );
+                        figure.set_x_range(lower_x, upper_x, 1.0).unwrap();
 
-                        figure.axes2d().set_y_range(
-                            AutoOption::<f64>::Fix(lower_y as f64),
-                            AutoOption::<f64>::Fix(upper_y as f64),
-                        );
+                        figure.set_y_range(lower_y, upper_y, 1.0).unwrap();
 
                         clusters.iter().for_each(|c: &Cluster| {
                             // Get x values
                             // Get y values
                             // Get PlotSettings
-                            //
-
-                            let (mut x, mut y): (Vec<f32>, Vec<f32>) = Default::default();
-                            c.get_points().iter().for_each(|p: &Point| {
-                                let _x = p.nth_value(0);
-                                let _y = p.nth_value(1);
-                                x.push(_x);
-                                y.push(_y);
-                            });
-
-                            // println!("{:?},{:?}", c, x);
+                            let mut plot_char: char = ' ';
 
                             match c.get_plot_settings() {
                                 Some(ps) => match ps {
                                     PlotSettings::Pair(c, h) => {
-                                        // println!("{:?}", h);
-                                        figure.axes2d().points(
-                                            &x,
-                                            &y,
-                                            &[PointSymbol(*c), Color(&*format!("#{}", h))],
-                                        );
+                                        plot_char = *c;
                                     }
                                 },
                                 None => unreachable!(),
                             }
+                            //
+                            c.get_points().iter().for_each(|p: &Point| {
+                                let _x = p.nth_value(0);
+                                let _y = p.nth_value(1);
+                                figure.set_point((_x, _y), plot_char).unwrap();
+                            });
+
+                            // println!("{:?},{:?}", c, x);
                         });
 
                         return Ok(figure);

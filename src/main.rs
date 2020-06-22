@@ -24,10 +24,6 @@ use test_functions::Rosenbrock;
 
 fn main4() {
     // fn main() {
-    // println!("{}", 135 / 2 as usize);
-}
-// fn main4() {
-fn main() {
     // let points =  gen_random_points(
     let mut plot = Plot2D::new();
     plot.set_x_range(-100.0, 100.0, 10.0).unwrap();
@@ -67,9 +63,9 @@ fn main2() {
     }
 }
 
-fn main3() {
-    let random_points = gen_random_points(2, 20, (-500.0, 500.0));
-    println!("{:?}", random_points);
+fn main() {
+    let random_points = gen_random_points(2, 1000, (-800.0, 900.0));
+    // println!("{:?}", random_points);
 
     let space = Space::new(random_points, 2);
 
@@ -77,7 +73,7 @@ fn main3() {
 
     let mut cluster_list = ClusterList::new(5, 2, k_means.get_space());
     let result = genetic_optimize(
-        20,
+        200,
         5,
         &mut cluster_list,
         &k_means,
@@ -85,7 +81,7 @@ fn main3() {
         0.2,
         &OptimizeType::MIN,
         &StopCondition::CYCLES(10),
-        true,
+        false,
         false,
     );
 
@@ -96,7 +92,7 @@ fn main3() {
         Err(e) => println!("{}", e),
     }
 
-    let figure = k_means.make_figure().unwrap().show();
+    let figure = k_means.make_plot().unwrap().draw(&mut std::io::stdout());
 }
 
 #[cfg(test)]

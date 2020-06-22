@@ -58,6 +58,7 @@ impl Plot2D {
         step: f32,
     ) -> Result<&'k mut Plot2D, &str> {
         if max <= min || (max - min) < step {
+            // println!("{:?}", (min, max));
             return Err("Invalid range");
         } else {
             self.y_range = Some((min, max));
@@ -96,7 +97,7 @@ impl Plot2D {
         // Self::map(x, (mapped_center, x_max), (center as f32, COLUMNS as f32))
         //
 
-        Self::map(x, (x_min, x_max), (0.0, COLUMNS as f32))
+        Self::map(x, (x_min, x_max), (0.0, (COLUMNS - 1) as f32))
     }
 
     /// Maps a y value to a valid [0,ROWS) value
@@ -104,16 +105,21 @@ impl Plot2D {
         let (y_min, y_max) = self.y_range.unwrap();
 
         let center = ROWS / 2 as usize;
-        println!("Center y: {}", center);
+        // println!("Center y: {}", center);
 
         // Maps center from screen domain to y domain
-        let mapped_center = Self::map(center as f32, (0.0, ROWS as f32), (y_max, y_min)).unwrap();
-        println!("Mapped center y: {}", mapped_center);
+        let mapped_center =
+            Self::map(center as f32, (0.0, (ROWS - 1) as f32), (y_max, y_min)).unwrap();
+        // println!("Mapped center y: {}", mapped_center);
 
         if y < mapped_center {
             // Range y_min .. mapped_center
             // map to 0 .. center
-            Self::map(y, (y_min, mapped_center), (ROWS as f32, center as f32))
+            Self::map(
+                y,
+                (y_min, mapped_center),
+                ((ROWS - 1) as f32, center as f32),
+            )
         } else {
             // Range  mapped_center .. y_may
             // map to center .. ROWS
@@ -133,16 +139,18 @@ impl Plot2D {
         let (y_min, y_max) = self.y_range.unwrap();
 
         if x < x_min || x > x_max {
+            // println!("x: {}, range: ({},{})", x, x_min, x_max);
             return Err("X value not in range");
         }
 
         if y < y_min || y > y_max {
-            return Err("Y value not in range");
+            // println!("y: {}, range: ({},{})", y, y_min, y_max);
+            return Err("Y value not in range:");
         }
 
         let x_mapped = self.map_x(x).unwrap();
         let y_mapped = self.map_y(y).unwrap();
-        println!("({},{})", x_mapped, y_mapped);
+        // println!("({},{})", x_mapped, y_mapped);
 
         self.point_matrix[y_mapped as usize][x_mapped as usize] = c;
 
