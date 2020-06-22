@@ -200,9 +200,10 @@ impl Plot2D {
         writeln!(file, "{}", y_max_tag);
 
         let mut x_tag_flag = false;
+        let mut x_tag_flag2 = false;
 
         for i in 0..ROWS {
-            for j in 0..(x_tag_len + COLUMNS) {
+            for j in 0..(x_tag_len * 2 + COLUMNS) {
                 let j_equ = j as isize - (x_tag_len as isize);
                 if j < x_tag_len {
                     if i == axis_x_row {
@@ -213,7 +214,7 @@ impl Plot2D {
                     } else {
                         write!(file, "{}", BLANK).unwrap();
                     }
-                } else {
+                } else if j < COLUMNS + x_tag_len {
                     let j_equ_u = j_equ as usize;
                     if j_equ_u == axis_y_row && i == axis_x_row {
                         write!(file, "{}", '|').unwrap();
@@ -227,6 +228,11 @@ impl Plot2D {
                     if i != axis_x_row && j_equ_u != axis_y_row {
                         // println!("({},{})", i, j_equ_u);
                         write!(file, "{}", self.point_matrix[i][j_equ_u]).unwrap();
+                    }
+                } else {
+                    if i == axis_x_row && !x_tag_flag2 {
+                        write!(file, "{}", x_max_fmt).unwrap();
+                        x_tag_flag2 = true;
                     }
                 }
 
