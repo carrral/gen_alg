@@ -2,7 +2,7 @@ use super::traits::{CandidateList, FitnessFunction};
 use super::types::FitnessReturn;
 use super::utils::debug_msg;
 use super::{InternalState, OptimizeType, StopCondition};
-use gnuplot::{Caption, Color, Figure, PointSymbol};
+use gnuplot::{Caption, Color, Figure};
 
 pub fn genetic_optimize<'a, T, U: Clone + 'a>(
     n: usize, // Tamaño de la población inicial

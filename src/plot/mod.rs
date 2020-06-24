@@ -197,7 +197,7 @@ impl Plot2D {
             BLANK.to_string().repeat(padding)
         );
 
-        writeln!(file, "{}", y_max_tag);
+        writeln!(file, "{}", y_max_tag).unwrap();
 
         let mut x_tag_flag = false;
         let mut x_tag_flag2 = false;
@@ -242,7 +242,7 @@ impl Plot2D {
             hor_step_counter += 1;
         }
 
-        writeln!(file, "{}", y_min_tag);
+        writeln!(file, "{}", y_min_tag).unwrap();
 
         Ok(())
     }

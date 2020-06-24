@@ -3,22 +3,17 @@ pub mod point;
 pub mod space;
 pub mod utils;
 pub mod wrapper;
-use super::genetic::implementations::multi_valued::RCCList;
 
 use super::genetic::traits::FitnessFunction;
 use super::genetic::types::FitnessReturn;
 use super::genetic::types::MultivaluedFloat;
-use super::genetic::utils::debug_msg;
-use super::genetic::utils::random_range;
 use super::plot::Plot2D;
 use cluster::{Cluster, PlotSettings};
-use gnuplot::{AutoOption, AxesCommon, Caption, Color, Figure, PointSymbol};
+use gnuplot::Figure;
 use point::Point;
-use space::{Center, Space};
+use space::Space;
 use std::collections::HashMap;
-use std::fmt;
 use utils::{gen_id_list, gen_plot_settings};
-use wrapper::ClusterList;
 
 pub struct Kmeans {
     space: Space,
@@ -62,7 +57,7 @@ impl Kmeans {
     /// this method will tag each point accordingly
     pub fn cluster<'a>(&'a mut self, mvf: MultivaluedFloat) -> Result<&'a Space, String> {
         let ids = gen_id_list(self.k);
-        let mut unique_settings = gen_plot_settings(self.k)?;
+        let unique_settings = gen_plot_settings(self.k)?;
         let mut centers = Kmeans::mvf_as_points(&mvf, self.dimmensions, self.k);
 
         // Tag each center

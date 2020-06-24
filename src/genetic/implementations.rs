@@ -60,7 +60,7 @@ pub mod single_valued {
             return s;
         }
 
-        fn eval_fitness(&mut self, f: &FitnessFunction<'a, isize>) -> FitnessReturn {
+        fn eval_fitness(&mut self, f: &dyn FitnessFunction<'a, isize>) -> FitnessReturn {
             let self_int = self.get_integer_representation();
             let fit = f.eval(self_int);
             self.fitness = Some(fit);
@@ -228,7 +228,7 @@ pub mod single_valued {
         }
 
         //Evaluates fitness for the whole candidate list
-        fn eval_fitness(&mut self, f: &FitnessFunction<'a, isize>) {
+        fn eval_fitness(&mut self, f: &dyn FitnessFunction<'a, isize>) {
             for candidate in &mut self.candidates {
                 candidate.eval_fitness(f);
             }
@@ -334,7 +334,7 @@ pub mod multi_valued {
         fn mutate(&mut self, opt_type: &OptimizeType) {
             ()
         }
-        fn eval_fitness(&mut self, f: &FitnessFunction<'a, MultivaluedFloat>) -> FitnessReturn {
+        fn eval_fitness(&mut self, f: &dyn FitnessFunction<'a, MultivaluedFloat>) -> FitnessReturn {
             let fit = f.eval(self.vars.clone());
             self.fitness = Some(fit);
             return fit;
@@ -1007,7 +1007,7 @@ pub mod multi_valued {
         }
 
         //Evaluates fitness for the whole candidate list
-        fn eval_fitness(&mut self, f: &FitnessFunction<'a, MultivaluedInteger>) {
+        fn eval_fitness(&mut self, f: &dyn FitnessFunction<'a, MultivaluedInteger>) {
             //FIXME: Agregar un genérico en la definición del trait, diferente a candidate
             for candidate in &mut self.candidates {
                 candidate.eval_fitness(f);

@@ -11,19 +11,14 @@ pub mod test_functions;
 
 use genetic::algorithms::genetic_optimize;
 use genetic::types::{FitnessReturn, MultivaluedFloat};
-use genetic::{implementations, OptimizeType, StopCondition};
-use implementations::multi_valued::RCCList;
+use genetic::{OptimizeType, StopCondition};
 use k_means::point::Point;
 use k_means::space::Space;
 use k_means::utils::gen_random_points;
 use k_means::wrapper::ClusterList;
 use k_means::Kmeans;
-use plot::Plot2D;
 use rand::{distributions::WeightedIndex, prelude::*, Rng};
-use std::error::Error;
 use std::io;
-use std::io::Write;
-use std::process;
 
 use oil::OilField;
 
@@ -51,7 +46,7 @@ fn main() {
     }
 
     let clusters = 5;
-    let mut space = Space::new(points, 8);
+    let space = Space::new(points, 8);
     let k_means = Kmeans::new(5, 8, space);
     let mut cluster_list = ClusterList::new(5, 8, k_means.get_space());
     let result = genetic_optimize(
@@ -74,6 +69,37 @@ fn main() {
         }
         Err(e) => println!("{}", e),
     }
+}
+
+fn main2() {
+    let random_points = gen_random_points(2, 500, (-1000.0, 1000.0));
+
+    let space = Space::new(random_points, 2);
+
+    let mut k_means = Kmeans::new(5, 2, space);
+
+    let mut cluster_list = ClusterList::new(5, 2, k_means.get_space());
+    let result = genetic_optimize(
+        200,
+        5,
+        &mut cluster_list,
+        &k_means,
+        0.6,
+        0.2,
+        &OptimizeType::MIN,
+        &StopCondition::CYCLES(10),
+        false,
+        false,
+    );
+
+    let space;
+
+    match result {
+        Ok((val, fit)) => space = k_means.cluster(val),
+        Err(e) => println!("{}", e),
+    }
+
+    let figure = k_means.make_plot().unwrap().draw(&mut std::io::stdout());
 }
 
 #[cfg(test)]
