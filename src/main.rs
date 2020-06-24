@@ -5,94 +5,75 @@
 
 pub mod genetic;
 pub mod k_means;
+pub mod oil;
 pub mod plot;
 pub mod test_functions;
+
 use genetic::algorithms::genetic_optimize;
 use genetic::types::{FitnessReturn, MultivaluedFloat};
 use genetic::{implementations, OptimizeType, StopCondition};
-use gnuplot::{AutoOption, AxesCommon, Caption, Color, Figure, PointSymbol};
 use implementations::multi_valued::RCCList;
+use k_means::point::Point;
 use k_means::space::Space;
 use k_means::utils::gen_random_points;
 use k_means::wrapper::ClusterList;
 use k_means::Kmeans;
-use matplotlib::{Env, Plot};
 use plot::Plot2D;
 use rand::{distributions::WeightedIndex, prelude::*, Rng};
+use std::error::Error;
+use std::io;
 use std::io::Write;
-use test_functions::Rosenbrock;
+use std::process;
 
-fn main4() {
-    // fn main() {
-    // let points =  gen_random_points(
-    let mut plot = Plot2D::new();
-    plot.set_x_range(-100.0, 100.0, 10.0).unwrap();
-    plot.set_y_range(-100.0, 100.0, 10.0).unwrap();
-    plot.set_point((10.0, 10.0), 'x').unwrap();
-    plot.set_point((9.0, 10.0), '.').unwrap();
-    plot.draw(&mut std::io::stdout()).unwrap();
-}
-
-fn main2() {
-    let mut mvfl = RCCList::new(2);
-    let lower_bound = MultivaluedFloat::new(2, vec![-2.0, -2.0]);
-    let upper_bound = MultivaluedFloat::new(2, vec![2.0, 2.0]);
-    let bounds = genetic::Bounds::new(lower_bound, upper_bound);
-    mvfl.set_bounds(bounds);
-
-    let results = genetic_optimize(
-        1000,
-        300,
-        &mut mvfl,
-        &Rosenbrock::new(),
-        0.6,
-        0.1,
-        &OptimizeType::MIN,
-        &StopCondition::CYCLES(100),
-        true,
-        true,
-    );
-
-    match results {
-        Ok((v, fit)) => {
-            println!("Resultado: {}, Fitness: {}", v.to_string(), fit);
-        }
-        Err(s) => {
-            println!("Error: {}", s);
-        }
-    }
-}
+use oil::OilField;
 
 fn main() {
-    let random_points = gen_random_points(2, 1000, (-800.0, 900.0));
-    // println!("{:?}", random_points);
+    let mut reader = csv::ReaderBuilder::new()
+        .delimiter(b',')
+        .from_reader(io::stdin());
 
-    let space = Space::new(random_points, 2);
+    let mut points: Vec<Point> = vec![];
 
-    let mut k_means = Kmeans::new(5, 2, space);
+    // for record in reader.records() {
+    for record in reader.deserialize() {
+        let oil_field: OilField = record.unwrap();
+        let point = Point::new(vec![
+            oil_field.x1,
+            oil_field.x2,
+            oil_field.x3,
+            oil_field.x4,
+            oil_field.x5,
+            oil_field.x6,
+            oil_field.x7,
+            oil_field.x8,
+        ]);
+        points.push(point);
+    }
 
-    let mut cluster_list = ClusterList::new(5, 2, k_means.get_space());
+    let clusters = 5;
+    let mut space = Space::new(points, 8);
+    let k_means = Kmeans::new(5, 8, space);
+    let mut cluster_list = ClusterList::new(5, 8, k_means.get_space());
     let result = genetic_optimize(
-        200,
-        5,
+        100,
+        10,
         &mut cluster_list,
         &k_means,
         0.6,
-        0.2,
+        0.03,
         &OptimizeType::MIN,
-        &StopCondition::CYCLES(10),
+        &StopCondition::CYCLES(300),
         false,
-        false,
+        true,
     );
 
-    let space;
-
     match result {
-        Ok((val, fit)) => space = k_means.cluster(val),
+        Ok((v, fitness)) => {
+            let centers = Kmeans::mvf_as_points(&v, 8, clusters);
+            println!("{:#?}", centers);
+        }
         Err(e) => println!("{}", e),
     }
-
-    let figure = k_means.make_plot().unwrap().draw(&mut std::io::stdout());
 }
 
 #[cfg(test)]
